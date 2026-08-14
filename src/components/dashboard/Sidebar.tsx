@@ -42,7 +42,7 @@ export function Sidebar() {
 
       <nav className="flex-1 space-y-1 px-3">
         {navItems.map((item, i) => {
-          const Icon = icons[i];
+          const Icon = icons[i] ?? Home;
           const active = i === 0;
           return (
             <button
