@@ -71,6 +71,7 @@ export function TendenciaChart() {
             stroke="var(--primary)"
             strokeWidth={2}
             dot={{ r: 3 }}
+            isAnimationActive={false}
           />
           <Line
             type="monotone"
@@ -79,6 +80,7 @@ export function TendenciaChart() {
             stroke="var(--success)"
             strokeWidth={2}
             dot={{ r: 3 }}
+            isAnimationActive={false}
           />
           <Line
             type="monotone"
@@ -87,6 +89,7 @@ export function TendenciaChart() {
             stroke="var(--purple)"
             strokeWidth={2}
             dot={{ r: 3 }}
+            isAnimationActive={false}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -110,7 +113,7 @@ export function CapacidadeChart() {
           <YAxis domain={[0, 150]} ticks={[0, 30, 60, 90, 120, 150]} {...axis} />
           <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--accent)" }} />
           <ReferenceLine y={100} stroke="var(--critical)" strokeDasharray="6 4" />
-          <Bar dataKey="utilizacao" name="Utilização" fill="var(--primary)" radius={[3, 3, 0, 0]}>
+          <Bar dataKey="utilizacao" name="Utilização" fill="var(--primary)" radius={[3, 3, 0, 0]} isAnimationActive={false}>
             <LabelList
               dataKey="utilizacao"
               position="top"
