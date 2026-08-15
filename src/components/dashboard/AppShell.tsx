@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Sidebar } from '@/components/dashboard/Sidebar';
-import { PageHeader } from '@/components/dashboard/PageHeader';
+import { Header } from '@/components/dashboard/Header';
 import type { DashboardPayload } from '@/types/dashboard';
 
 export function AppShell({
@@ -18,7 +18,7 @@ export function AppShell({
     <div className="flex min-h-screen bg-background">
       <Sidebar />
       <main className="min-w-0 flex-1 space-y-4 p-5 xl:p-6">
-        <PageHeader title={title} description={description} data={data} />
+        <Header title={title} description={description} data={data} />
         {children}
       </main>
     </div>

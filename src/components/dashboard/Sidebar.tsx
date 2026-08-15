@@ -35,9 +35,9 @@ const navItems: { label: string; to: string; icon: LucideIcon }[] = [
 
 export function Sidebar() {
   return (
-    <aside className="hidden w-64 shrink-0 flex-col bg-sidebar lg:flex">
-      <div className="px-5 py-6">
-        <img src="/claro-logo.png" alt="Claro" className="h-16 w-16 object-contain" />
+    <aside className="hidden w-60 shrink-0 flex-col bg-sidebar lg:flex">
+      <div className="flex items-center gap-3 px-5 py-6">
+        <img src="/claro-logo.png" alt="Claro" className="h-14 w-14 rounded-full object-cover shadow-lg" />
       </div>
 
       <nav className="flex-1 space-y-1 px-3">

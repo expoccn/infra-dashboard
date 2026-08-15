@@ -6,26 +6,29 @@ import {
   Bell,
   ChevronRight,
   CircleSlash,
+  ClipboardList,
   Database,
   FileCheck2,
   HelpCircle,
   Info,
   LineChart,
+  PencilLine,
   Timer,
-  Wrench,
+  Building,
 } from 'lucide-react';
+
 import { AppShell } from '@/components/dashboard/AppShell';
 import { Panel } from '@/components/dashboard/Panel';
 import { KpiCard } from '@/components/dashboard/KpiCard';
-import { CapacidadeChart, TendenciaChart } from '@/components/dashboard/Charts';
-import { StatusBadge } from '@/components/dashboard/StatusBadge';
+import { TendenciaChart, CapacidadeChart } from '@/components/dashboard/Charts';
+import { EmptyState } from '@/components/dashboard/EmptyState';
 import { useDashboard } from '@/hooks/useDashboard';
 
 export const Route = createFileRoute('/')({
   component: VisaoExecutiva,
 });
 
-const origemIcons = [FileCheck2, Wrench, Timer] as const;
+const origemIcons = [FileCheck2, PencilLine, Timer];
 const origemTone = ['text-success bg-success/12', 'text-primary bg-primary/12', 'text-warning bg-warning/12'];
 const origemValueTone = ['text-success', 'text-primary', 'text-warning'];
 
@@ -35,7 +38,7 @@ function VisaoExecutiva() {
 
   return (
     <AppShell
-      title="Visão Executiva"
+      title="Dashboard de Governança de Infraestrutura"
       description="Resumo consolidado da referência atual, com destaque para a qualidade das fontes, capacidade instalada, climatização e pendências manuais."
       data={data}
     >
@@ -65,15 +68,15 @@ function VisaoExecutiva() {
         <Panel title="Atenção" icon={Bell} iconClassName="text-warning">
           <ul className="space-y-2">
             {data.overview.attention.map((item) => (
-              <li key={item} className="rounded-lg bg-warning/8 px-3 py-2 text-sm text-foreground/90">
-                {item}
+              <li key={item} className="flex items-center gap-2 rounded-lg bg-warning/8 px-3 py-2 text-sm">
+                <Building className="h-4 w-4 shrink-0 text-warning" />
+                <span className="truncate text-foreground/90">{item}</span>
+                <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
               </li>
             ))}
           </ul>
         </Panel>
-      </div>
 
-      <div className="grid gap-4 xl:grid-cols-4">
         <Panel title="Dados Pendentes" icon={HelpCircle} iconClassName="text-warning">
           <ul className="space-y-2">
             {data.overview.pendingData.map((item) => (
@@ -83,35 +86,14 @@ function VisaoExecutiva() {
               </li>
             ))}
           </ul>
-          <div className="mt-4 grid gap-2 text-sm">
-            <div className="flex items-center justify-between rounded-lg bg-surface px-3 py-2">
-              <span className="text-muted-foreground">Fontes recebidas</span>
-              <StatusBadge label={`${data.completion.receivedSources}/${data.completion.expectedSources}`} tone="ok" />
+          <div className="mt-4">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Completude dos dados</span>
+              <span className="font-semibold text-primary">{Math.round(data.completion.measurementCompletenessPct)}%</span>
             </div>
-            <div className="flex items-center justify-between rounded-lg bg-surface px-3 py-2">
-              <span className="text-muted-foreground">Medições válidas</span>
-              <StatusBadge label={`${data.completion.measurementCompletenessPct.toFixed(2).replace('.', ',')}%`} tone="info" />
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-full bg-primary" style={{ width: `${Math.max(0, Math.min(100, data.completion.measurementCompletenessPct))}%` }} />
             </div>
-          </div>
-        </Panel>
-
-        <Panel title="Origem dos Dados" icon={Database} className="xl:col-span-3">
-          <div className="grid gap-3 md:grid-cols-3">
-            {data.overview.sourceOrigins.map((item, i) => {
-              const Icon = origemIcons[i] ?? FileCheck2;
-              return (
-                <div key={item.title} className="flex items-center gap-3 rounded-xl bg-surface px-3 py-4">
-                  <span className={`rounded-lg p-2 ${origemTone[i]}`}>
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{item.title}</p>
-                    <p className="truncate text-xs text-muted-foreground">{item.description}</p>
-                  </div>
-                  <span className={`text-lg font-semibold ${origemValueTone[i]}`}>{item.value}</span>
-                </div>
-              );
-            })}
           </div>
         </Panel>
       </div>
@@ -120,22 +102,45 @@ function VisaoExecutiva() {
         <Panel title="Tendência Mensal" icon={LineChart} className="xl:col-span-2" action={<Info className="h-4 w-4 text-muted-foreground" />}>
           <TendenciaChart data={data.overview.trendMonthly} />
         </Panel>
+
         <Panel title="Capacidade por Família" icon={BarChart3} action={<Info className="h-4 w-4 text-muted-foreground" />}>
           <CapacidadeChart data={data.overview.familyCapacity} />
         </Panel>
-        <Panel title="Escopo Atual" icon={Database}>
-          <div className="space-y-3 text-sm">
-            <div className="rounded-xl bg-surface px-3 py-3">
-              <p className="font-medium">Total de fontes mapeadas</p>
-              <p className="mt-1 text-2xl font-semibold text-primary">{data.overview.totalSources}</p>
-            </div>
-            <div className="rounded-xl bg-surface px-3 py-3">
-              <p className="font-medium">Sem fonte automática</p>
-              <p className="mt-1 text-muted-foreground">{data.unavailableModules.join(', ')}</p>
-            </div>
+
+        <Panel title="Origem dos Dados" icon={Database}>
+          <ul className="space-y-3">
+            {data.overview.sourceOrigins.map((item, i) => {
+              const Icon = origemIcons[i] ?? FileCheck2;
+              return (
+                <li key={item.title} className="flex items-center gap-3 rounded-xl bg-surface px-3 py-3">
+                  <span className={`rounded-lg p-2 ${origemTone[i]}`}>
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{item.title}</p>
+                    <p className="truncate text-xs text-muted-foreground">{item.description}</p>
+                  </div>
+                  <span className={`text-lg font-semibold ${origemValueTone[i]}`}>{item.value}</span>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="mt-auto flex items-center justify-between border-t border-border pt-4 text-sm">
+            <span className="text-muted-foreground">Total de fontes</span>
+            <span className="text-lg font-semibold text-primary">{data.overview.totalSources}</span>
           </div>
         </Panel>
       </div>
+
+      <Panel title="Plano de Ação" icon={ClipboardList}>
+        <EmptyState
+          title="Sem fonte definida"
+          description="A estrutura da página foi mantida, mas nenhum dado fictício é exibido. Quando houver uma origem oficial para plano de ação, este bloco poderá ser preenchido automaticamente."
+        />
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          Valores sujeitos à revisão. Os indicadores seguem as definições do Catálogo de Métricas de Data Centers.
+        </p>
+      </Panel>
     </AppShell>
   );
 }
