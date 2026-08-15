@@ -2,6 +2,7 @@ import {
   Home,
   Zap,
   ShieldCheck,
+  Wrench,
   Layers,
   Snowflake,
   Fuel,
@@ -12,52 +13,52 @@ import {
   Sparkles,
   ChevronRight,
   Building2,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { navItems } from "@/data/dashboard";
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import { cn } from '@/lib/utils';
 
-const icons: LucideIcon[] = [
-  Home,
-  Zap,
-  ShieldCheck,
-  Layers,
-  Snowflake,
-  Fuel,
-  Server,
-  ClipboardList,
-  Database,
-  FileText,
-  Sparkles,
+const navItems: { label: string; to: string; icon: LucideIcon }[] = [
+  { label: 'Visão Executiva', to: '/', icon: Home },
+  { label: 'Energia & PUE', to: '/energia-pue', icon: Zap },
+  { label: 'Disponibilidade', to: '/disponibilidade', icon: ShieldCheck },
+  { label: 'Manutenção', to: '/manutencao', icon: Wrench },
+  { label: 'Capacidade', to: '/capacidade', icon: Layers },
+  { label: 'Climatização', to: '/climatizacao', icon: Snowflake },
+  { label: 'Diesel', to: '/diesel', icon: Fuel },
+  { label: 'Racks', to: '/racks', icon: Server },
+  { label: 'Plano de Ação', to: '/plano-acao', icon: ClipboardList },
+  { label: 'Qualidade dos Dados', to: '/qualidade-dados', icon: Database },
+  { label: 'Relatórios', to: '/relatorios', icon: FileText },
+  { label: 'Análises por IA', to: '/analises-ia', icon: Sparkles },
 ];
 
 export function Sidebar() {
   return (
-    <aside className="hidden w-60 shrink-0 flex-col bg-sidebar lg:flex">
-      <div className="flex items-center gap-3 px-5 py-6">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand text-sm font-bold tracking-tight text-primary-foreground shadow-lg">
-          Claro
-        </div>
+    <aside className="hidden w-64 shrink-0 flex-col bg-sidebar lg:flex">
+      <div className="px-5 py-6">
+        <img src="/claro-logo.png" alt="Claro" className="h-16 w-16 object-contain" />
       </div>
 
       <nav className="flex-1 space-y-1 px-3">
-        {navItems.map((item, i) => {
-          const Icon = icons[i] ?? Home;
-          const active = i === 0;
+        {navItems.map((item) => {
+          const Icon = item.icon;
           return (
-            <button
-              key={item}
-              type="button"
-              className={cn(
-                "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
-                active
-                  ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground/70 hover:bg-accent hover:text-sidebar-foreground",
-              )}
+            <Link
+              key={item.label}
+              to={item.to}
+              className={({ isActive }) =>
+                cn(
+                  'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+                  isActive
+                    ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground/70 hover:bg-accent hover:text-sidebar-foreground',
+                )
+              }
             >
               <Icon className="h-4 w-4 shrink-0" />
-              <span className="truncate">{item}</span>
-            </button>
+              <span className="truncate">{item.label}</span>
+            </Link>
           );
         })}
       </nav>
