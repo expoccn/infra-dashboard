@@ -39,10 +39,17 @@ export function AuthGate({ children }: { children: ReactNode }) {
         : false;
 
   if (!allowed) {
+    const authScreen = pathname === LOGIN_PATH || pathname === PASSWORD_PATH;
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <LoaderCircle className="h-5 w-5 animate-spin text-primary" />
+      <div
+        className={
+          authScreen
+            ? 'flex min-h-screen items-center justify-center bg-[#070708] text-white'
+            : 'flex min-h-screen items-center justify-center bg-background text-foreground'
+        }
+      >
+        <div className={authScreen ? 'flex items-center gap-3 text-sm text-white/65' : 'flex items-center gap-3 text-sm text-muted-foreground'}>
+          <LoaderCircle className={authScreen ? 'h-5 w-5 animate-spin text-[#e30613]' : 'h-5 w-5 animate-spin text-primary'} />
           Verificando acesso...
         </div>
       </div>

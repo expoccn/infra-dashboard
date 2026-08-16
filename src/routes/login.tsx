@@ -38,7 +38,7 @@ function LoginPage() {
 
   return (
     <AuthShell>
-      <div className="w-full max-w-[550px] rounded-[28px] border border-white/70 bg-white px-6 py-8 text-slate-950 shadow-[0_30px_90px_rgba(0,0,0,0.48)] sm:px-9 sm:py-10 lg:px-12 lg:py-12">
+      <div className="w-full max-w-[535px] rounded-[28px] border border-white/70 bg-white px-6 py-8 text-slate-950 shadow-[0_30px_90px_rgba(0,0,0,0.48)] sm:px-9 sm:py-10 lg:px-11 lg:py-11" style={{ colorScheme: 'light' }}>
         <div className="text-center">
           <h2 className="text-2xl font-semibold tracking-tight text-[#d90817] sm:text-[1.85rem]">Acesso ao Sistema</h2>
           <p className="mt-2 text-sm text-slate-500 sm:text-base">Entre com suas credenciais para acessar o dashboard.</p>
