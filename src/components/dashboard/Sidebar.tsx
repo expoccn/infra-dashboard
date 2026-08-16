@@ -13,12 +13,16 @@ import {
   Sparkles,
   ChevronRight,
   Building2,
+  LogOut,
+  UserRound,
+  KeyRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { useHealth } from "@/hooks/useDataService";
 import { ThemeToggle } from "@/components/dashboard/ThemeToggle";
+import { useAuth } from '@/context/AuthContext';
 
 const navItems: { label: string; to: string; icon: LucideIcon }[] = [
   { label: "Visão Executiva", to: "/", icon: Home },
@@ -38,6 +42,7 @@ const navItems: { label: string; to: string; icon: LucideIcon }[] = [
 export function Sidebar() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const healthQuery = useHealth();
+  const { user, logout } = useAuth();
 
   return (
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
@@ -73,7 +78,23 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="m-3 mt-auto flex shrink-0 items-center gap-3 rounded-xl border border-sidebar-border bg-card px-3 py-3">
+      <div className="mx-3 mb-2 mt-auto flex shrink-0 items-center gap-3 rounded-xl border border-sidebar-border bg-card px-3 py-3">
+        <UserRound className="h-5 w-5 shrink-0 text-primary" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold">{user?.display_name || user?.username || 'Usuário'}</p>
+          <p className="truncate text-[10px] uppercase tracking-wide text-muted-foreground">{user?.role === 'ADMIN' ? 'Administrador' : 'Leitura'}</p>
+        </div>
+        <div className="flex items-center gap-1">
+          <Link to="/alterar-senha" className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-primary" aria-label="Alterar senha">
+            <KeyRound className="h-4 w-4" />
+          </Link>
+          <button type="button" onClick={() => void logout()} className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-critical" aria-label="Sair">
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="mx-3 mb-3 flex shrink-0 items-center gap-3 rounded-xl border border-sidebar-border bg-card px-3 py-3">
         <Building2 className="h-5 w-5 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">DC RJO-AM</p>

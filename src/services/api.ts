@@ -11,6 +11,8 @@ import type {
   ReportResponse,
   SaveResponse,
 } from '@/types/api';
+import type { ChangePasswordResponse, LoginResponse, LogoutResponse, MeResponse } from '@/types/auth';
+import { getAccessToken, notifyAuthExpired } from '@/lib/authStorage';
 
 export const DATA_API_BASE_URL = (
   import.meta.env.VITE_DATA_API_BASE_URL ||
@@ -44,7 +46,7 @@ export class ApiError extends Error {
   }
 }
 
-async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const controller = new AbortController();
   const timeout = globalThis.setTimeout(() => controller.abort(), 15000);
 
@@ -55,6 +57,7 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
       headers: {
         Accept: 'application/json',
         ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(getAccessToken() ? { Authorization: `Bearer ${getAccessToken()}` } : {}),
         ...(init?.headers || {}),
       },
     });
@@ -71,6 +74,7 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
 
     if (!response.ok) {
       const errorBody = (body || {}) as ApiErrorBody;
+      if (response.status === 401) notifyAuthExpired();
       throw new ApiError(
         safeServiceMessage(errorBody.message || errorBody.error, response.status),
         response.status,
@@ -142,4 +146,30 @@ export function saveMaintenance(payload: {
 
 export function fetchReport(period: PeriodType) {
   return apiRequest<ReportResponse>(`/report?period=${period}`);
+}
+
+
+export function loginAccess(username: string, password: string) {
+  return apiRequest<LoginResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ username, password }),
+  });
+}
+
+export function fetchCurrentAccess() {
+  return apiRequest<MeResponse>('/auth/me');
+}
+
+export function logoutAccess() {
+  return apiRequest<LogoutResponse>('/auth/logout', { method: 'POST' });
+}
+
+export function changeAccessPassword(currentPassword: string, newPassword: string) {
+  return apiRequest<ChangePasswordResponse>('/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+  });
 }

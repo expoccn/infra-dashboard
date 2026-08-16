@@ -17,6 +17,8 @@ import { Route as PlanoAcaoRouteImport } from './routes/plano-acao'
 import { Route as QualidadeDadosRouteImport } from './routes/qualidade-dados'
 import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as AnalisesIaRouteImport } from './routes/analises-ia'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AlterarSenhaRouteImport } from './routes/alterar-senha'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -90,6 +92,18 @@ const AnalisesIaRoute = AnalisesIaRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
+const AlterarSenhaRoute = AlterarSenhaRouteImport.update({
+  id: '/alterar-senha',
+  path: '/alterar-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/energia-pue': typeof EnergiaPueRoute
@@ -103,7 +117,10 @@ export interface FileRoutesByFullPath {
   '/qualidade-dados': typeof QualidadeDadosRoute
   '/relatorios': typeof RelatoriosRoute
   '/analises-ia': typeof AnalisesIaRoute
+  '/login': typeof LoginRoute
+  '/alterar-senha': typeof AlterarSenhaRoute
 }
+
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/energia-pue': typeof EnergiaPueRoute
@@ -117,7 +134,10 @@ export interface FileRoutesByTo {
   '/qualidade-dados': typeof QualidadeDadosRoute
   '/relatorios': typeof RelatoriosRoute
   '/analises-ia': typeof AnalisesIaRoute
+  '/login': typeof LoginRoute
+  '/alterar-senha': typeof AlterarSenhaRoute
 }
+
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
@@ -132,13 +152,15 @@ export interface FileRoutesById {
   '/qualidade-dados': typeof QualidadeDadosRoute
   '/relatorios': typeof RelatoriosRoute
   '/analises-ia': typeof AnalisesIaRoute
+  '/login': typeof LoginRoute
+  '/alterar-senha': typeof AlterarSenhaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/energia-pue' | '/disponibilidade' | '/manutencao' | '/capacidade' | '/climatizacao' | '/diesel' | '/racks' | '/plano-acao' | '/qualidade-dados' | '/relatorios' | '/analises-ia'
+  fullPaths: '/' | '/energia-pue' | '/disponibilidade' | '/manutencao' | '/capacidade' | '/climatizacao' | '/diesel' | '/racks' | '/plano-acao' | '/qualidade-dados' | '/relatorios' | '/analises-ia' | '/login' | '/alterar-senha'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/energia-pue' | '/disponibilidade' | '/manutencao' | '/capacidade' | '/climatizacao' | '/diesel' | '/racks' | '/plano-acao' | '/qualidade-dados' | '/relatorios' | '/analises-ia'
-  id: '__root__' | '/' | '/energia-pue' | '/disponibilidade' | '/manutencao' | '/capacidade' | '/climatizacao' | '/diesel' | '/racks' | '/plano-acao' | '/qualidade-dados' | '/relatorios' | '/analises-ia'
+  to: '/' | '/energia-pue' | '/disponibilidade' | '/manutencao' | '/capacidade' | '/climatizacao' | '/diesel' | '/racks' | '/plano-acao' | '/qualidade-dados' | '/relatorios' | '/analises-ia' | '/login' | '/alterar-senha'
+  id: '__root__' | '/' | '/energia-pue' | '/disponibilidade' | '/manutencao' | '/capacidade' | '/climatizacao' | '/diesel' | '/racks' | '/plano-acao' | '/qualidade-dados' | '/relatorios' | '/analises-ia' | '/login' | '/alterar-senha'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -154,6 +176,8 @@ export interface RootRouteChildren {
   QualidadeDadosRoute: typeof QualidadeDadosRoute
   RelatoriosRoute: typeof RelatoriosRoute
   AnalisesIaRoute: typeof AnalisesIaRoute
+  LoginRoute: typeof LoginRoute
+  AlterarSenhaRoute: typeof AlterarSenhaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -242,6 +266,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalisesIaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/alterar-senha': {
+      id: '/alterar-senha'
+      path: '/alterar-senha'
+      fullPath: '/alterar-senha'
+      preLoaderRoute: typeof AlterarSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -258,6 +296,8 @@ const rootRouteChildren: RootRouteChildren = {
   QualidadeDadosRoute: QualidadeDadosRoute,
   RelatoriosRoute: RelatoriosRoute,
   AnalisesIaRoute: AnalisesIaRoute,
+  LoginRoute: LoginRoute,
+  AlterarSenhaRoute: AlterarSenhaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

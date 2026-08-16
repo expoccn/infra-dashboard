@@ -10,14 +10,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useDashboard } from '@/hooks/useDashboard';
+import { useAuth } from '@/context/AuthContext';
 import { useMaintenance, useSaveMaintenance } from '@/hooks/useDataService';
 
 export const Route = createFileRoute('/manutencao')({ component: ManutencaoPage });
 
 function ManutencaoPage() {
   const dashboardQuery = useDashboard();
+  const { user } = useAuth();
   const [competence, setCompetence] = useState('');
-  const [responsible, setResponsible] = useState('');
   const [planned, setPlanned] = useState('');
   const [completed, setCompleted] = useState('');
   const [notes, setNotes] = useState('');
@@ -35,14 +36,12 @@ function ManutencaoPage() {
   useEffect(() => {
     const record = maintenanceQuery.data?.data;
     if (record) {
-      setResponsible(record.responsible || '');
       setPlanned(String(record.planned));
       setCompleted(String(record.completed));
       setNotes(record.notes || '');
       return;
     }
     if (maintenanceQuery.isSuccess) {
-      setResponsible('');
       setPlanned('');
       setCompleted('');
       setNotes('');
@@ -83,7 +82,7 @@ function ManutencaoPage() {
     try {
       await saveMutation.mutateAsync({
         competence,
-        responsible,
+        responsible: user?.display_name || user?.username || 'Administrador',
         planned: plannedNumber,
         completed: completedNumber,
         notes,
@@ -110,8 +109,8 @@ function ManutencaoPage() {
               <Input id="competencia" placeholder="2026-06" value={competence} onChange={(e) => setCompetence(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="responsavel">Responsável</Label>
-              <Input id="responsavel" placeholder="Nome do responsável" value={responsible} onChange={(e) => setResponsible(e.target.value)} />
+              <Label>Responsável</Label>
+              <Input value={user?.display_name || user?.username || 'Administrador'} disabled aria-label="Responsável autenticado" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="planejadas">Preventivas planejadas</Label>

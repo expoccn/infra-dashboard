@@ -13,6 +13,8 @@ import appCss from '../styles.css?url';
 import { reportLovableError } from '../lib/lovable-error-reporting';
 import { PeriodProvider } from '@/context/PeriodContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { AuthProvider } from '@/context/AuthContext';
+import { AuthGate } from '@/components/dashboard/AuthGate';
 
 function NotFoundComponent() {
   return (
@@ -79,7 +81,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { title: 'Claro | Governança de Infraestrutura | DC RJO-AM' },
       { name: 'description', content: 'Dashboard de governança de infraestrutura para o DC RJO-AM, com visão executiva, capacidade, climatização, qualidade dos dados e módulos manuais.' },
-      { name: 'author', content: 'OpenAI for Claro / 2See' },
+      { name: 'author', content: 'Claro' },
       { property: 'og:title', content: 'Claro | Governança de Infraestrutura | DC RJO-AM' },
       { property: 'og:description', content: 'Dashboard de governança de infraestrutura para o DC RJO-AM.' },
       { property: 'og:type', content: 'website' },
@@ -124,9 +126,13 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <PeriodProvider>
-          <Outlet />
-        </PeriodProvider>
+        <AuthProvider>
+          <PeriodProvider>
+            <AuthGate>
+              <Outlet />
+            </AuthGate>
+          </PeriodProvider>
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

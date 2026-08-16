@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useDashboard } from '@/hooks/useDashboard';
+import { useAuth } from '@/context/AuthContext';
 import { useRacks, useSaveRacks } from '@/hooks/useDataService';
 
 type RackEntryForm = {
@@ -25,8 +26,8 @@ export const Route = createFileRoute('/racks')({ component: RacksPage });
 
 function RacksPage() {
   const dashboardQuery = useDashboard();
+  const { user } = useAuth();
   const [competence, setCompetence] = useState('');
-  const [responsible, setResponsible] = useState('');
   const [locations, setLocations] = useState<RackEntryForm[]>([emptyLocation()]);
   const [notes, setNotes] = useState('');
   const [feedback, setFeedback] = useState('');
@@ -43,7 +44,6 @@ function RacksPage() {
   useEffect(() => {
     const record = racksQuery.data?.data;
     if (record) {
-      setResponsible(record.responsible || '');
       setNotes(record.notes || '');
       setLocations(record.locations.length ? record.locations.map((item) => ({
         location: item.location,
@@ -54,7 +54,6 @@ function RacksPage() {
       return;
     }
     if (racksQuery.isSuccess) {
-      setResponsible('');
       setNotes('');
       setLocations([emptyLocation()]);
     }
@@ -104,7 +103,7 @@ function RacksPage() {
     }
 
     try {
-      await saveMutation.mutateAsync({ competence, responsible, locations: normalized, notes });
+      await saveMutation.mutateAsync({ competence, responsible: user?.display_name || user?.username || 'Administrador', locations: normalized, notes });
       setFeedback('Lançamento salvo com sucesso.');
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : 'Falha ao salvar racks.');
@@ -127,8 +126,8 @@ function RacksPage() {
               <Input id="competencia-racks" value={competence} onChange={(e) => setCompetence(e.target.value)} placeholder="2026-06" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="responsavel-racks">Responsável</Label>
-              <Input id="responsavel-racks" value={responsible} onChange={(e) => setResponsible(e.target.value)} placeholder="Nome do responsável" />
+              <Label>Responsável</Label>
+              <Input value={user?.display_name || user?.username || 'Administrador'} disabled aria-label="Responsável autenticado" />
             </div>
           </div>
 
