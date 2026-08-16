@@ -1,4 +1,4 @@
-import type { MetricAggregate, N8nDashboardResponse, SourceCoverage } from '@/types/api';
+import type { MetricAggregate, DashboardApiResponse, SourceCoverage } from '@/types/api';
 import type {
   ChillerMetric,
   DashboardPayload,
@@ -81,7 +81,7 @@ function equipment(name: string, metric?: MetricAggregate | null, status?: DataA
     max: nullableNumber(metric?.max),
     peakTimestamp: metric?.peak_timestamp ? formatDateTimeBr(metric.peak_timestamp) : metric?.peak_date ? formatDateBr(metric.peak_date) : null,
     status: status || metricStatus(metric),
-    note,
+    ...(note !== undefined ? { note } : {}),
   };
 }
 
@@ -93,7 +93,7 @@ function coverageQuality(coverage: SourceCoverage): SourceStatusItem['qualitySta
   return 'DEGRADED';
 }
 
-function sourceItems(response: N8nDashboardResponse): SourceStatusItem[] {
+function sourceItems(response: DashboardApiResponse): SourceStatusItem[] {
   const coverage = response.completion.source_coverage || {};
   return Object.entries(SOURCE_LABELS).map(([reportType, label]) => {
     const c = coverage[reportType] || {
@@ -122,13 +122,13 @@ function sourceItems(response: N8nDashboardResponse): SourceStatusItem[] {
 function rppMetric(name: string, value?: Record<string, MetricAggregate> | null): RppMetric {
   return {
     name,
-    avgKva: nullableNumber(value?.load_kva?.avg),
-    maxKva: nullableNumber(value?.load_kva?.max),
-    avgVoltage: nullableNumber(value?.voltage_v?.avg),
-    avgCurrentR: nullableNumber(value?.current_r_a?.avg),
-    avgCurrentS: nullableNumber(value?.current_s_a?.avg),
-    avgCurrentT: nullableNumber(value?.current_t_a?.avg),
-    status: metricStatus(value?.load_kva),
+    avgKva: nullableNumber(value?.['load_kva']?.avg),
+    maxKva: nullableNumber(value?.['load_kva']?.max),
+    avgVoltage: nullableNumber(value?.['voltage_v']?.avg),
+    avgCurrentR: nullableNumber(value?.['current_r_a']?.avg),
+    avgCurrentS: nullableNumber(value?.['current_s_a']?.avg),
+    avgCurrentT: nullableNumber(value?.['current_t_a']?.avg),
+    status: metricStatus(value?.['load_kva']),
   };
 }
 
@@ -148,7 +148,7 @@ function findVacAssets(vac: Record<string, unknown> | null): string[] {
     .map((key) => key.toUpperCase());
 }
 
-export function adaptDashboardResponse(response: N8nDashboardResponse): DashboardPayload {
+export function adaptDashboardResponse(response: DashboardApiResponse): DashboardPayload {
   const sources = sourceItems(response);
   const coverage = response.completion.source_coverage || {};
   const expectedSources = Object.keys(SOURCE_LABELS).length;
@@ -253,9 +253,9 @@ export function adaptDashboardResponse(response: N8nDashboardResponse): Dashboar
     { family: 'PUE', utilization: null },
   ];
 
-  const vacCoverage = nullableNumber(coverage.DISP_INFRA_VAC?.valid_coverage_pct) ?? 0;
+  const vacCoverage = nullableNumber(coverage['DISP_INFRA_VAC']?.valid_coverage_pct) ?? 0;
   const vacAssets = findVacAssets(vac);
-  const vacAvailable = (coverage.DISP_INFRA_VAC?.days_valid || 0) > 0;
+  const vacAvailable = (coverage['DISP_INFRA_VAC']?.days_valid || 0) > 0;
 
   const gmgRule = response.operational.gmg?.kpi_capacity_rule || 'PENDING_VALIDATION';
 
@@ -327,7 +327,7 @@ export function adaptDashboardResponse(response: N8nDashboardResponse): Dashboar
       trendMonthly,
       familyCapacity,
       sourceOrigins: [
-        { title: 'CSV automático', description: 'WebCTRL / relatórios por e-mail', value: 7, status: 'ok' },
+        { title: 'CSV automático', description: 'WebCTRL via CSV', value: 7, status: 'ok' },
         { title: 'Lançamento manual', description: 'Racks e manutenção', value: 2, status: 'info' },
         { title: 'Sem fonte', description: 'Indicadores fora do escopo atual', value: unavailableModules.length, status: 'warn' },
       ],
@@ -344,34 +344,34 @@ export function adaptDashboardResponse(response: N8nDashboardResponse): Dashboar
     })),
     operational: {
       ups: [
-        equipment('UPS 801', ups.ups_801_kva),
-        equipment('UPS 802', ups.ups_802_kva),
-        equipment('UPS 1001', ups.ups_1001_kva),
+        equipment('UPS 801', ups['ups_801_kva']),
+        equipment('UPS 802', ups['ups_802_kva']),
+        equipment('UPS 1001', ups['ups_1001_kva']),
       ],
       gmg: [
-        equipment('Gerador 1', gmg.gmg_1_kva, 'PENDING_VALIDATION', `Regra de capacidade: ${gmgRule}`),
-        equipment('Gerador 2', gmg.gmg_2_kva, 'PENDING_VALIDATION', `Regra de capacidade: ${gmgRule}`),
-        equipment('Gerador 3', gmg.gmg_3_kva, 'PENDING_VALIDATION', `Regra de capacidade: ${gmgRule}`),
-        equipment('Gerador 4', gmg.gmg_4_kva, 'PENDING_VALIDATION', `Regra de capacidade: ${gmgRule}`),
+        equipment('Gerador 1', gmg['gmg_1_kva'], 'PENDING_VALIDATION', `Regra de capacidade: ${gmgRule}`),
+        equipment('Gerador 2', gmg['gmg_2_kva'], 'PENDING_VALIDATION', `Regra de capacidade: ${gmgRule}`),
+        equipment('Gerador 3', gmg['gmg_3_kva'], 'PENDING_VALIDATION', `Regra de capacidade: ${gmgRule}`),
+        equipment('Gerador 4', gmg['gmg_4_kva'], 'PENDING_VALIDATION', `Regra de capacidade: ${gmgRule}`),
       ],
       rpp: [
-        rppMetric('RPP01', rpp.rpp01),
-        rppMetric('RPP02', rpp.rpp02),
+        rppMetric('RPP01', rpp['rpp01']),
+        rppMetric('RPP02', rpp['rpp02']),
       ],
       climatization: {
-        totalAvgTr: nullableNumber(thermal.total_tr?.avg),
-        totalMaxTr: nullableNumber(thermal.total_tr?.max),
-        peakTimestamp: thermal.total_tr?.peak_timestamp ? formatDateTimeBr(thermal.total_tr.peak_timestamp) : thermal.total_tr?.peak_date ? formatDateBr(thermal.total_tr.peak_date) : null,
+        totalAvgTr: nullableNumber(thermal['total_tr']?.avg),
+        totalMaxTr: nullableNumber(thermal['total_tr']?.max),
+        peakTimestamp: thermal['total_tr']?.peak_timestamp ? formatDateTimeBr(thermal['total_tr'].peak_timestamp) : thermal['total_tr']?.peak_date ? formatDateBr(thermal['total_tr'].peak_date) : null,
         chillers: [
-          chiller('York', thermal.tr_york),
-          chiller('Trane', thermal.tr_trane),
-          chiller('Carrier', thermal.tr_carrier),
+          chiller('York', thermal['tr_york']),
+          chiller('Trane', thermal['tr_trane']),
+          chiller('Carrier', thermal['tr_carrier']),
         ],
       },
       vac: {
         status: vacAvailable ? 'AVAILABLE' : 'UNAVAILABLE',
         note: vacAvailable
-          ? `Dados VAC presentes em ${coverage.DISP_INFRA_VAC?.days_valid || 0}/${response.period.valid_days} dias válidos do período.`
+          ? `Dados VAC presentes em ${coverage['DISP_INFRA_VAC']?.days_valid || 0}/${response.period.valid_days} dias válidos do período.`
           : 'Nenhum dado VAC válido no período selecionado.',
         coveragePct: vacCoverage,
         monitoredAssets: vacAssets,

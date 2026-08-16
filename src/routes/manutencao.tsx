@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useDashboard } from '@/hooks/useDashboard';
-import { useMaintenance, useSaveMaintenance } from '@/hooks/useBackend';
+import { useMaintenance, useSaveMaintenance } from '@/hooks/useDataService';
 
 export const Route = createFileRoute('/manutencao')({ component: ManutencaoPage });
 
@@ -50,12 +50,12 @@ function ManutencaoPage() {
   }, [maintenanceQuery.data, maintenanceQuery.isSuccess]);
 
   if (dashboardQuery.isPending) {
-    return <PageState loading title="Carregando dados" description="Consultando o backend n8n e o Redis..." />;
+    return <PageState loading title="Carregando dados" description="Consultando os dados do dashboard..." />;
   }
   if (dashboardQuery.isError || !dashboardQuery.data) {
     return (
       <PageState
-        title="Backend indisponível"
+        title="Dados indisponíveis"
         description={dashboardQuery.error instanceof Error ? dashboardQuery.error.message : 'Não foi possível carregar os dados.'}
         onRetry={() => void dashboardQuery.refetch()}
       />
@@ -88,7 +88,7 @@ function ManutencaoPage() {
         completed: completedNumber,
         notes,
       });
-      setFeedback('Lançamento salvo com sucesso no backend n8n.');
+      setFeedback('Lançamento salvo com sucesso.');
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : 'Falha ao salvar manutenção.');
     }
@@ -99,7 +99,7 @@ function ManutencaoPage() {
   return (
     <AppShell
       title="Manutenção"
-      description="Lançamento manual das preventivas por competência, persistido pelo n8n no Redis e versionado por revisão."
+      description="Lançamento manual das preventivas por competência, com histórico de atualização e revisão."
       data={data}
     >
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">

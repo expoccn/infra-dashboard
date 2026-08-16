@@ -12,12 +12,12 @@ export const Route = createFileRoute('/climatizacao')({ component: ClimatizacaoP
 function ClimatizacaoPage() {
   const dashboardQuery = useDashboard();
   if (dashboardQuery.isPending) {
-    return <PageState loading title="Carregando dados" description="Consultando o backend n8n e o Redis..." />;
+    return <PageState loading title="Carregando dados" description="Consultando os dados do dashboard..." />;
   }
   if (dashboardQuery.isError || !dashboardQuery.data) {
     return (
       <PageState
-        title="Backend indisponível"
+        title="Dados indisponíveis"
         description={dashboardQuery.error instanceof Error ? dashboardQuery.error.message : 'Não foi possível carregar os dados.'}
         onRetry={() => void dashboardQuery.refetch()}
       />
@@ -28,7 +28,7 @@ function ClimatizacaoPage() {
   return (
     <AppShell
       title="Climatização"
-      description="Tela operacional para carga térmica e monitoramento VAC, utilizando a telemetria já consolidada em Redis."
+      description="Tela operacional para carga térmica e monitoramento VAC, utilizando os dados recebidos do WebCTRL via CSV."
       data={data}
     >
       <div className="grid gap-4 md:grid-cols-3">

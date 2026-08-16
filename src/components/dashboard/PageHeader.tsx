@@ -50,7 +50,7 @@ export function PageHeader({
             <CalendarDays className="h-4 w-4" /> Dados de referência
           </div>
           <p className="mt-2 text-base font-semibold">{data.header.referenceDate}</p>
-          <p className="text-xs text-muted-foreground">{data.header.referenceMode === 'D1' ? 'Base diária validada' : 'Último Redis válido'}</p>
+          <p className="text-xs text-muted-foreground">{data.header.referenceMode === 'D1' ? 'Base diária validada' : 'Último dado válido'}</p>
         </div>
 
         <div className="rounded-xl border border-border bg-card px-4 py-3">
@@ -68,7 +68,7 @@ export function PageHeader({
             <CloudUpload className="h-4 w-4" /> Última geração
           </div>
           <p className="mt-2 text-base font-semibold">{data.header.generatedAt}</p>
-          <p className="text-xs text-muted-foreground">Ingestão via workflows n8n</p>
+          <p className="text-xs text-muted-foreground">Dados automáticos: WebCTRL via CSV</p>
         </div>
 
         <div className="rounded-xl border border-border bg-card px-4 py-3">

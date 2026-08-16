@@ -18,7 +18,7 @@ export interface SourceCoverage {
   valid_coverage_pct: number | null;
 }
 
-export interface N8nDashboardResponse {
+export interface DashboardApiResponse {
   ok: boolean;
   schema_version: number;
   site: string;
@@ -166,7 +166,6 @@ export interface SaveResponse<T> {
 export interface HealthResponse {
   ok: boolean;
   service: string;
-  redis: boolean;
   last_valid_date: string | null;
   valid_day: boolean | null;
   checked_at: string;
@@ -177,17 +176,17 @@ export interface ReportResponse {
   report: {
     title: string;
     site: string;
-    period: N8nDashboardResponse['period'];
-    reference: N8nDashboardResponse['header'];
+    period: DashboardApiResponse['period'];
+    reference: DashboardApiResponse['header'];
     generated_at: string;
     executive_summary: string;
     sections: {
-      data_quality: N8nDashboardResponse['completion'];
-      ups: N8nDashboardResponse['operational']['ups'];
-      rpp: N8nDashboardResponse['operational']['rpp'];
-      climatization: N8nDashboardResponse['operational']['climatization'];
-      availability: N8nDashboardResponse['operational']['availability'];
-      gmg: N8nDashboardResponse['operational']['gmg'];
+      data_quality: DashboardApiResponse['completion'];
+      ups: DashboardApiResponse['operational']['ups'];
+      rpp: DashboardApiResponse['operational']['rpp'];
+      climatization: DashboardApiResponse['operational']['climatization'];
+      availability: DashboardApiResponse['operational']['availability'];
+      gmg: DashboardApiResponse['operational']['gmg'];
       racks: RackRecord | { status: string };
       maintenance: MaintenanceRecord | { status: string };
       unavailable: Record<string, string>;

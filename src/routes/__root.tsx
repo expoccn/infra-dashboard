@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from 'react';
 import appCss from '../styles.css?url';
 import { reportLovableError } from '../lib/lovable-error-reporting';
 import { PeriodProvider } from '@/context/PeriodContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 
 function NotFoundComponent() {
   return (
@@ -77,10 +78,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { title: 'Claro | Governança de Infraestrutura | DC RJO-AM' },
-      { name: 'description', content: 'Frontend de governança de infraestrutura para o DC RJO-AM, com visão executiva, capacidade, climatização, qualidade dos dados e módulos manuais.' },
+      { name: 'description', content: 'Dashboard de governança de infraestrutura para o DC RJO-AM, com visão executiva, capacidade, climatização, qualidade dos dados e módulos manuais.' },
       { name: 'author', content: 'OpenAI for Claro / 2See' },
       { property: 'og:title', content: 'Claro | Governança de Infraestrutura | DC RJO-AM' },
-      { property: 'og:description', content: 'Frontend de governança de infraestrutura para o DC RJO-AM.' },
+      { property: 'og:description', content: 'Dashboard de governança de infraestrutura para o DC RJO-AM.' },
       { property: 'og:type', content: 'website' },
       { name: 'twitter:card', content: 'summary_large_image' },
     ],
@@ -102,6 +103,11 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR">
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('claro-rjo-am-theme');var dark=t?t==='dark':true;document.documentElement.classList.toggle('dark',dark);document.documentElement.dataset.theme=dark?'dark':'light';document.documentElement.style.colorScheme=dark?'dark':'light';}catch(e){document.documentElement.classList.add('dark');document.documentElement.dataset.theme='dark';document.documentElement.style.colorScheme='dark';}})();`,
+          }}
+        />
         <HeadContent />
       </head>
       <body>
@@ -117,9 +123,11 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <PeriodProvider>
-        <Outlet />
-      </PeriodProvider>
+      <ThemeProvider>
+        <PeriodProvider>
+          <Outlet />
+        </PeriodProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

@@ -5,6 +5,6 @@ import type { DashboardPayload } from '@/types/dashboard';
 
 export async function getDashboardPayload(period: PeriodType): Promise<DashboardPayload> {
   const response = await fetchDashboard(period);
-  if (!response?.ok) throw new Error('Backend retornou payload de dashboard inválido.');
+  if (!response?.ok) throw new Error('A fonte de dados retornou uma resposta inválida para o dashboard.');
   return adaptDashboardResponse(response);
 }

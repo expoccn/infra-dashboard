@@ -4,7 +4,7 @@ import type {
   HistoryResponse,
   MaintenanceGetResponse,
   MaintenanceRecord,
-  N8nDashboardResponse,
+  DashboardApiResponse,
   PeriodType,
   RackRecord,
   RacksGetResponse,
@@ -12,14 +12,29 @@ import type {
   SaveResponse,
 } from '@/types/api';
 
-export const N8N_WEBHOOK_BASE_URL = (
-  import.meta.env.VITE_N8N_WEBHOOK_BASE_URL ||
+export const DATA_API_BASE_URL = (
+  import.meta.env.VITE_DATA_API_BASE_URL ||
   'https://ancar-n8n.gpfgqx.easypanel.host/webhook/claro-rjo-am'
 ).replace(/\/$/, '');
 
+
+function safeServiceMessage(message: string | undefined, status: number) {
+  const fallback = status === 503
+    ? 'Os dados ainda não estão disponíveis para a seleção atual.'
+    : status === 404
+      ? 'Nenhum dado foi encontrado para a seleção atual.'
+      : status >= 500
+        ? 'Não foi possível concluir a consulta de dados.'
+        : 'Não foi possível concluir a solicitação.';
+
+  if (!message) return fallback;
+  if (/\b(n8n|redis|webhook|workflow|backend)\b/i.test(message)) return fallback;
+  return message;
+}
+
 export class ApiError extends Error {
   status: number;
-  code?: string;
+  code: string | undefined;
 
   constructor(message: string, status: number, code?: string) {
     super(message);
@@ -34,7 +49,7 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const timeout = globalThis.setTimeout(() => controller.abort(), 15000);
 
   try {
-    const response = await fetch(`${N8N_WEBHOOK_BASE_URL}${path}`, {
+    const response = await fetch(`${DATA_API_BASE_URL}${path}`, {
       ...init,
       signal: controller.signal,
       headers: {
@@ -50,14 +65,14 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
       try {
         body = JSON.parse(text);
       } catch {
-        throw new ApiError(`Resposta inválida do backend (${response.status}).`, response.status, 'INVALID_JSON');
+        throw new ApiError(`Resposta inválida da fonte de dados (${response.status}).`, response.status, 'INVALID_JSON');
       }
     }
 
     if (!response.ok) {
       const errorBody = (body || {}) as ApiErrorBody;
       throw new ApiError(
-        errorBody.message || errorBody.error || `Falha HTTP ${response.status}`,
+        safeServiceMessage(errorBody.message || errorBody.error, response.status),
         response.status,
         errorBody.error,
       );
@@ -67,16 +82,16 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   } catch (error) {
     if (error instanceof ApiError) throw error;
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new ApiError('Tempo limite excedido ao consultar o backend n8n.', 0, 'TIMEOUT');
+      throw new ApiError('Tempo limite excedido ao consultar a fonte de dados.', 0, 'TIMEOUT');
     }
-    throw new ApiError('Não foi possível conectar ao backend n8n.', 0, 'NETWORK_ERROR');
+    throw new ApiError('Não foi possível conectar à fonte de dados.', 0, 'NETWORK_ERROR');
   } finally {
     globalThis.clearTimeout(timeout);
   }
 }
 
 export function fetchDashboard(period: PeriodType) {
-  return apiRequest<N8nDashboardResponse>(`/dashboard?period=${period}`);
+  return apiRequest<DashboardApiResponse>(`/dashboard?period=${period}`);
 }
 
 export function fetchHistory() {

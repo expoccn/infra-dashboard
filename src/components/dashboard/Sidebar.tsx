@@ -17,7 +17,8 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
-import { useHealth } from "@/hooks/useBackend";
+import { useHealth } from "@/hooks/useDataService";
+import { ThemeToggle } from "@/components/dashboard/ThemeToggle";
 
 const navItems: { label: string; to: string; icon: LucideIcon }[] = [
   { label: "Visão Executiva", to: "/", icon: Home },
@@ -40,12 +41,13 @@ export function Sidebar() {
 
   return (
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
-      <div className="flex h-[108px] shrink-0 items-center px-6">
+      <div className="flex h-[108px] shrink-0 items-center justify-between px-6">
         <img
           src="/claro-logo.png"
           alt="Claro"
-          className="h-[74px] w-[74px] object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.28)]"
+          className="h-[74px] w-[74px] object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.20)] dark:drop-shadow-[0_8px_18px_rgba(0,0,0,0.28)]"
         />
+        <ThemeToggle compact />
       </div>
 
       <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 pb-3">
@@ -78,7 +80,7 @@ export function Sidebar() {
           <p className="truncate text-xs text-muted-foreground">Operações &amp; Governança</p>
           <p className="mt-1 flex items-center gap-1.5 truncate text-[10px] text-muted-foreground">
             <span className={cn("h-1.5 w-1.5 rounded-full", healthQuery.data?.ok ? "bg-success" : healthQuery.isPending ? "bg-warning" : "bg-critical")} />
-            {healthQuery.data?.ok ? "Backend online" : healthQuery.isPending ? "Verificando backend" : "Backend indisponível"}
+            {healthQuery.data?.ok ? "Dados disponíveis" : healthQuery.isPending ? "Verificando dados" : "Dados indisponíveis"}
           </p>
         </div>
         <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />

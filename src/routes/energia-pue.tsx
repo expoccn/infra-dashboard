@@ -13,12 +13,12 @@ export const Route = createFileRoute('/energia-pue')({ component: EnergiaPuePage
 function EnergiaPuePage() {
   const dashboardQuery = useDashboard();
   if (dashboardQuery.isPending) {
-    return <PageState loading title="Carregando dados" description="Consultando o backend n8n e o Redis..." />;
+    return <PageState loading title="Carregando dados" description="Consultando os dados do dashboard..." />;
   }
   if (dashboardQuery.isError || !dashboardQuery.data) {
     return (
       <PageState
-        title="Backend indisponível"
+        title="Dados indisponíveis"
         description={dashboardQuery.error instanceof Error ? dashboardQuery.error.message : 'Não foi possível carregar os dados.'}
         onRetry={() => void dashboardQuery.refetch()}
       />
@@ -86,7 +86,7 @@ function EnergiaPuePage() {
 
       <Panel title="Leitura Operacional" icon={Bolt}>
         <p className="text-sm leading-relaxed text-muted-foreground">
-          Esta seção mantém a estrutura pronta para o consumo do payload real do Redis. Enquanto PUE, concessionária, transformadores e FCC não possuírem telemetria consolidada, o frontend os exibirá explicitamente como não disponíveis, sem assumir valores zero.
+          Esta seção apresenta os dados operacionais disponíveis a partir dos relatórios do WebCTRL via CSV. Enquanto PUE, concessionária, transformadores e FCC não possuírem fonte homologada, serão exibidos explicitamente como não disponíveis, sem assumir valores zero.
         </p>
       </Panel>
     </AppShell>

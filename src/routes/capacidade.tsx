@@ -12,12 +12,12 @@ export const Route = createFileRoute('/capacidade')({ component: CapacidadePage 
 function CapacidadePage() {
   const dashboardQuery = useDashboard();
   if (dashboardQuery.isPending) {
-    return <PageState loading title="Carregando dados" description="Consultando o backend n8n e o Redis..." />;
+    return <PageState loading title="Carregando dados" description="Consultando os dados do dashboard..." />;
   }
   if (dashboardQuery.isError || !dashboardQuery.data) {
     return (
       <PageState
-        title="Backend indisponível"
+        title="Dados indisponíveis"
         description={dashboardQuery.error instanceof Error ? dashboardQuery.error.message : 'Não foi possível carregar os dados.'}
         onRetry={() => void dashboardQuery.refetch()}
       />

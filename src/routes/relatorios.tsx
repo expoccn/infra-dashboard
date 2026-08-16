@@ -5,7 +5,7 @@ import { PageState } from '@/components/dashboard/PageState';
 import { Panel } from '@/components/dashboard/Panel';
 import { StatusBadge } from '@/components/dashboard/StatusBadge';
 import { useDashboard } from '@/hooks/useDashboard';
-import { useReport } from '@/hooks/useBackend';
+import { useReport } from '@/hooks/useDataService';
 
 export const Route = createFileRoute('/relatorios')({ component: RelatoriosPage });
 
@@ -14,12 +14,12 @@ function RelatoriosPage() {
   const reportQuery = useReport();
 
   if (dashboardQuery.isPending) {
-    return <PageState loading title="Carregando dados" description="Consultando o backend n8n e o Redis..." />;
+    return <PageState loading title="Carregando dados" description="Consultando os dados do dashboard..." />;
   }
   if (dashboardQuery.isError || !dashboardQuery.data) {
     return (
       <PageState
-        title="Backend indisponível"
+        title="Dados indisponíveis"
         description={dashboardQuery.error instanceof Error ? dashboardQuery.error.message : 'Não foi possível carregar os dados.'}
         onRetry={() => void dashboardQuery.refetch()}
       />
@@ -30,15 +30,15 @@ function RelatoriosPage() {
   return (
     <AppShell
       title="Relatórios"
-      description="Prévia do relatório executivo consolidado diretamente pelo workflow de relatório do n8n para o período selecionado."
+      description="Prévia do relatório executivo consolidado para o período selecionado, com base nos dados recebidos do WebCTRL via CSV e nos lançamentos manuais."
       data={data}
     >
       {reportQuery.isPending ? (
-        <Panel title="Relatório Executivo" icon={FileText}><p className="text-sm text-muted-foreground">Gerando prévia pelo backend...</p></Panel>
+        <Panel title="Relatório Executivo" icon={FileText}><p className="text-sm text-muted-foreground">Gerando prévia do relatório...</p></Panel>
       ) : reportQuery.isError || !reportQuery.data ? (
         <Panel title="Relatório Executivo" icon={FileText}>
           <div className="flex items-center justify-between gap-4 rounded-xl bg-warning/8 px-4 py-3">
-            <p className="text-sm text-warning">Não foi possível consultar o workflow de relatório.</p>
+            <p className="text-sm text-warning">Não foi possível gerar a prévia do relatório.</p>
             <button type="button" className="text-xs font-medium text-primary" onClick={() => void reportQuery.refetch()}>Tentar novamente</button>
           </div>
         </Panel>
@@ -56,7 +56,7 @@ function RelatoriosPage() {
                 <div className="rounded-xl bg-surface px-4 py-3"><p className="text-muted-foreground">Dias válidos</p><p className="mt-1 font-semibold">{reportQuery.data.report.period.valid_days}</p></div>
               </div>
               <div className="rounded-xl bg-surface px-4 py-3">
-                <p className="font-medium">Seções consolidadas pelo n8n</p>
+                <p className="font-medium">Seções consolidadas</p>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
                   <li>Qualidade dos dados</li><li>UPS e RPP</li><li>Climatização</li><li>Disponibilidade</li><li>GMG</li><li>Racks</li><li>Manutenção</li><li>Itens sem fonte</li>
                 </ul>
@@ -66,7 +66,7 @@ function RelatoriosPage() {
 
           <Panel title="Status do pacote" icon={LayoutList}>
             <div className="space-y-3">
-              <StatusBadge label="n8n integrado" tone="ok" />
+              <StatusBadge label="Dados integrados" tone="ok" />
               <StatusBadge label={reportQuery.data.report.period.label} tone="info" />
               <StatusBadge
                 label={'status' in reportQuery.data.report.sections.racks ? 'Racks pendente' : 'Racks disponível'}
@@ -76,7 +76,7 @@ function RelatoriosPage() {
                 label={'status' in reportQuery.data.report.sections.maintenance ? 'Manutenção pendente' : 'Manutenção disponível'}
                 tone={'status' in reportQuery.data.report.sections.maintenance ? 'pending' : 'ok'}
               />
-              <p className="text-sm leading-relaxed text-muted-foreground">A exportação PDF permanece como etapa posterior; esta tela já consome a estrutura determinística gerada pelo workflow 20.</p>
+              <p className="text-sm leading-relaxed text-muted-foreground">A exportação PDF permanece como etapa posterior; esta tela já apresenta a estrutura consolidada do relatório executivo.</p>
             </div>
           </Panel>
         </div>

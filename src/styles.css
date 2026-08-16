@@ -4,20 +4,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
- */
-
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -56,8 +42,41 @@
   --color-sidebar-border: var(--sidebar-border);
 }
 
+/* Tema claro: padrão sem a classe .dark. */
 :root {
   --radius: 0.75rem;
+  --background: oklch(0.975 0.006 255);
+  --foreground: oklch(0.24 0.025 265);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.025 265);
+  --surface: oklch(0.95 0.012 255);
+  --primary: oklch(0.48 0.18 252);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.935 0.014 255);
+  --secondary-foreground: oklch(0.28 0.025 265);
+  --muted: oklch(0.93 0.012 255);
+  --muted-foreground: oklch(0.49 0.025 258);
+  --accent: oklch(0.92 0.025 252);
+  --accent-foreground: oklch(0.31 0.055 252);
+  --success: oklch(0.45 0.145 153);
+  --warning: oklch(0.49 0.145 70);
+  --critical: oklch(0.50 0.205 28);
+  --purple: oklch(0.48 0.18 300);
+  --brand: oklch(0.58 0.23 27);
+  --destructive: oklch(0.50 0.205 28);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.865 0.015 255);
+  --input: oklch(0.84 0.018 255);
+  --ring: oklch(0.48 0.18 252);
+  --sidebar: oklch(0.955 0.014 255);
+  --sidebar-foreground: oklch(0.29 0.03 265);
+  --sidebar-accent: oklch(0.88 0.06 252);
+  --sidebar-accent-foreground: oklch(0.33 0.11 252);
+  --sidebar-border: oklch(0.84 0.018 255);
+}
+
+/* Tema escuro: preserva a identidade visual já aprovada. */
+.dark {
   --background: oklch(0.16 0.025 265);
   --foreground: oklch(0.97 0.005 250);
   --card: oklch(0.2 0.028 265);
@@ -93,9 +112,22 @@
     border-color: var(--color-border);
   }
 
+  html {
+    color-scheme: light;
+    background-color: var(--color-background);
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklch, var(--color-primary) 25%, transparent);
   }
 }
-

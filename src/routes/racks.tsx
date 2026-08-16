@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useDashboard } from '@/hooks/useDashboard';
-import { useRacks, useSaveRacks } from '@/hooks/useBackend';
+import { useRacks, useSaveRacks } from '@/hooks/useDataService';
 
 type RackEntryForm = {
   location: string;
@@ -61,12 +61,12 @@ function RacksPage() {
   }, [racksQuery.data, racksQuery.isSuccess]);
 
   if (dashboardQuery.isPending) {
-    return <PageState loading title="Carregando dados" description="Consultando o backend n8n e o Redis..." />;
+    return <PageState loading title="Carregando dados" description="Consultando os dados do dashboard..." />;
   }
   if (dashboardQuery.isError || !dashboardQuery.data) {
     return (
       <PageState
-        title="Backend indisponível"
+        title="Dados indisponíveis"
         description={dashboardQuery.error instanceof Error ? dashboardQuery.error.message : 'Não foi possível carregar os dados.'}
         onRetry={() => void dashboardQuery.refetch()}
       />
@@ -105,7 +105,7 @@ function RacksPage() {
 
     try {
       await saveMutation.mutateAsync({ competence, responsible, locations: normalized, notes });
-      setFeedback('Lançamento salvo com sucesso no backend n8n.');
+      setFeedback('Lançamento salvo com sucesso.');
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : 'Falha ao salvar racks.');
     }
@@ -116,7 +116,7 @@ function RacksPage() {
   return (
     <AppShell
       title="Racks"
-      description="Preenchimento manual de capacidade, ocupação e disponibilidade por competência, persistido pelo n8n no Redis."
+      description="Preenchimento manual de capacidade, ocupação e disponibilidade por competência, integrado à base operacional do dashboard."
       data={data}
     >
       <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">

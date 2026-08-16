@@ -1,16 +1,12 @@
-# Claro RJO-AM — Frontend integrado ao n8n
+# Claro RJO-AM — Frontend operacional
 
-Versão de integração preparada sobre a v3 visualmente aprovada.
+Versão baseada no layout visual aprovado, com integração aos dados operacionais e suporte a tema claro/escuro.
 
-## Backend
+## Origem dos dados apresentada ao usuário
 
-Base padrão:
-
-`https://ancar-n8n.gpfgqx.easypanel.host/webhook/claro-rjo-am`
-
-Pode ser sobrescrita no build por:
-
-`VITE_N8N_WEBHOOK_BASE_URL`
+- Dados automáticos: WebCTRL via CSV.
+- Dados manuais: Racks e Manutenção.
+- Indicadores sem fonte homologada permanecem como “Não disponível”.
 
 ## Períodos globais
 
@@ -18,35 +14,29 @@ Pode ser sobrescrita no build por:
 - `7d` = 7 últimos dias válidos disponíveis.
 - `30d` = 30 últimos dias válidos disponíveis.
 
-A seleção é compartilhada por todas as páginas e mantida em `localStorage`.
+A seleção é compartilhada por todas as páginas e mantida no navegador.
 
-## Endpoints consumidos
+## Tema
 
-- GET `/dashboard?period=d1|7d|30d`
-- GET `/history`
-- GET `/health`
-- GET `/racks?competence=YYYY-MM`
-- POST `/racks`
-- GET `/maintenance?competence=YYYY-MM`
-- POST `/maintenance`
-- GET `/report?period=d1|7d|30d`
+- Tema escuro permanece como padrão inicial.
+- O usuário pode alternar para tema claro pelo botão de tema.
+- A preferência é persistida no navegador.
+- Todos os cards, tabelas, formulários, gráficos, estados de erro/loading e sidebar usam tokens semânticos compatíveis com os dois temas.
 
-## Mudanças principais
+## Funcionalidades
 
-- mocks removidos do fluxo de produção;
-- adapter entre contrato n8n e componentes visuais;
-- período global Último dia / 7 dias / 30 dias;
+- dashboard sem fallback para dados simulados;
+- Último dia / 7 dias / 30 dias válidos;
 - Racks com leitura, gravação e múltiplos locais;
 - Manutenção com leitura e gravação;
-- Qualidade dos Dados ligada ao histórico real;
-- Relatórios ligados ao workflow 20;
-- Health exibido discretamente no rodapé da sidebar;
-- tratamento de loading, erro HTTP, timeout e cache ainda não pronto;
+- histórico e qualidade dos dados;
+- relatório executivo;
+- tratamento de loading, indisponibilidade e timeout;
 - `0` permanece valor real e `null` permanece indisponível;
-- indicadores sem fonte não recebem valores artificiais;
-- route tree atualizado para as 12 páginas.
+- 12 rotas funcionais no menu lateral.
 
-## Observação de CORS
+## Configuração de conexão
 
-Os workflows 12–20 permitem a origem de produção `https://claro-rj-am.2see.io`.
-Pré-visualizações em outro domínio precisarão de origem adicional ou proxy.
+A URL da fonte de dados pode ser definida no build por:
+
+`VITE_DATA_API_BASE_URL`

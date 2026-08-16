@@ -3,6 +3,7 @@ import { periodLabels, usePeriod } from '@/context/PeriodContext';
 import type { DashboardPayload } from '@/types/dashboard';
 import type { PeriodType } from '@/types/api';
 import { cn } from '@/lib/utils';
+import { ThemeToggle } from '@/components/dashboard/ThemeToggle';
 
 const periods: PeriodType[] = ['d1', '7d', '30d'];
 
@@ -53,7 +54,7 @@ export function Header({
           <CloudUpload className="h-4.5 w-4.5 text-muted-foreground" />
           <div>
             <p className="font-medium">Atualizado {data.header.generatedAt}</p>
-            <p className="mt-0.5 text-muted-foreground">Backend n8n · Redis</p>
+            <p className="mt-0.5 text-muted-foreground">Dados automáticos: WebCTRL via CSV</p>
           </div>
         </div>
 
@@ -97,6 +98,7 @@ export function Header({
           D-1 cronológico: {data.header.expectedD1}
           {data.header.stale ? ` · defasagem ${data.header.daysLag} dias` : ''}
         </span>
+        <div className="lg:hidden"><ThemeToggle /></div>
       </div>
     </header>
   );
