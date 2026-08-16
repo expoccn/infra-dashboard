@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Fuel } from 'lucide-react';
 import { AppShell } from '@/components/dashboard/AppShell';
+import { PageState } from '@/components/dashboard/PageState';
 import { Panel } from '@/components/dashboard/Panel';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { useDashboard } from '@/hooks/useDashboard';
@@ -8,8 +9,20 @@ import { useDashboard } from '@/hooks/useDashboard';
 export const Route = createFileRoute('/diesel')({ component: DieselPage });
 
 function DieselPage() {
-  const { data, isPending } = useDashboard();
-  if (isPending || !data) return null;
+  const dashboardQuery = useDashboard();
+  if (dashboardQuery.isPending) {
+    return <PageState loading title="Carregando dados" description="Consultando o backend n8n e o Redis..." />;
+  }
+  if (dashboardQuery.isError || !dashboardQuery.data) {
+    return (
+      <PageState
+        title="Backend indisponível"
+        description={dashboardQuery.error instanceof Error ? dashboardQuery.error.message : 'Não foi possível carregar os dados.'}
+        onRetry={() => void dashboardQuery.refetch()}
+      />
+    );
+  }
+  const data = dashboardQuery.data;
 
   return (
     <AppShell

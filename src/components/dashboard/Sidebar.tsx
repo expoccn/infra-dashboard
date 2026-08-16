@@ -17,6 +17,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
+import { useHealth } from "@/hooks/useBackend";
 
 const navItems: { label: string; to: string; icon: LucideIcon }[] = [
   { label: "Visão Executiva", to: "/", icon: Home },
@@ -35,6 +36,7 @@ const navItems: { label: string; to: string; icon: LucideIcon }[] = [
 
 export function Sidebar() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const healthQuery = useHealth();
 
   return (
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
@@ -74,6 +76,10 @@ export function Sidebar() {
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">DC RJO-AM</p>
           <p className="truncate text-xs text-muted-foreground">Operações &amp; Governança</p>
+          <p className="mt-1 flex items-center gap-1.5 truncate text-[10px] text-muted-foreground">
+            <span className={cn("h-1.5 w-1.5 rounded-full", healthQuery.data?.ok ? "bg-success" : healthQuery.isPending ? "bg-warning" : "bg-critical")} />
+            {healthQuery.data?.ok ? "Backend online" : healthQuery.isPending ? "Verificando backend" : "Backend indisponível"}
+          </p>
         </div>
         <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
       </div>

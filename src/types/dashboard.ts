@@ -1,3 +1,5 @@
+import type { MaintenanceRecord, PeriodType, RackRecord } from '@/types/api';
+
 export type DataAvailability =
   | 'AVAILABLE'
   | 'UNAVAILABLE'
@@ -7,7 +9,6 @@ export type DataAvailability =
   | 'PENDING_VALIDATION';
 
 export type UiStatus = 'ok' | 'warn' | 'crit' | 'pending' | 'info';
-
 export type KpiIcon = 'pue' | 'shield' | 'grid' | 'clipboard' | 'alert' | 'list';
 
 export interface HeaderMeta {
@@ -61,6 +62,9 @@ export interface SourceStatusItem {
   referenceStatus: string;
   updatedAt: string;
   measurementCoveragePct?: number | null;
+  daysReceived: number;
+  daysValid: number;
+  daysInPeriod: number;
 }
 
 export interface EquipmentMetric {
@@ -91,19 +95,33 @@ export interface ChillerMetric {
   status: DataAvailability;
 }
 
-export interface ManualModule {
+export interface ManualModule<T = unknown> {
   status: DataAvailability;
   message: string;
   competence: string;
+  data: T | null;
 }
 
 export interface DashboardPayload {
+  period: {
+    type: PeriodType;
+    label: string;
+    requestedDays: number;
+    validDays: number;
+    partialHistory: boolean;
+    dates: string[];
+    startDate: string;
+    endDate: string;
+    referenceDate: string;
+  };
   header: HeaderMeta;
   completion: {
     expectedSources: number;
     receivedSources: number;
+    validSources: number;
     missingSources: string[];
     sourceCompletenessPct: number;
+    validSourceCompletenessPct: number;
     measurementCompletenessPct: number;
     status: string;
   };
@@ -119,6 +137,14 @@ export interface DashboardPayload {
     totalSources: number;
   };
   sources: SourceStatusItem[];
+  daily: Array<{
+    referenceDate: string;
+    status: string;
+    receivedSources: number | null;
+    validSources: number | null;
+    sourceCompletenessPct: number | null;
+    measurementCompletenessPct: number | null;
+  }>;
   operational: {
     ups: EquipmentMetric[];
     gmg: EquipmentMetric[];
@@ -142,8 +168,8 @@ export interface DashboardPayload {
     };
   };
   manual: {
-    maintenance: ManualModule;
-    racks: ManualModule;
+    maintenance: ManualModule<MaintenanceRecord>;
+    racks: ManualModule<RackRecord>;
   };
   unavailableModules: string[];
   report: {

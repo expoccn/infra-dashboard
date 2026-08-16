@@ -49,13 +49,16 @@ function Legend({ items }: { items: { label: string; color: string; dashed?: boo
 }
 
 export function TendenciaChart({ data }: { data: MonthlyTrendPoint[] }) {
+  if (!data.length) {
+    return <div className="flex h-[220px] items-center justify-center text-sm text-muted-foreground">Sem histórico para o período selecionado.</div>;
+  }
+
   return (
     <div>
       <Legend
         items={[
-          { label: 'Disponibilidade / Fontes (%)', color: 'var(--primary)' },
+          { label: 'Cobertura das fontes (%)', color: 'var(--primary)' },
           { label: 'Completude de medições (%)', color: 'var(--success)' },
-          { label: 'Preventivas (%)', color: 'var(--purple)' },
         ]}
       />
       <ResponsiveContainer width="100%" height={220}>
@@ -64,9 +67,8 @@ export function TendenciaChart({ data }: { data: MonthlyTrendPoint[] }) {
           <XAxis dataKey="month" {...axis} />
           <YAxis domain={[0, 110]} ticks={[0, 25, 50, 75, 100]} {...axis} />
           <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: 'var(--border)' }} />
-          <Line type="monotone" dataKey="disponibilidade" name="Disponibilidade" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
-          <Line type="monotone" dataKey="capacidade" name="Completude" stroke="var(--success)" strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
-          <Line type="monotone" dataKey="preventivas" name="Preventivas" stroke="var(--purple)" strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
+          <Line type="monotone" dataKey="disponibilidade" name="Cobertura das fontes" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
+          <Line type="monotone" dataKey="capacidade" name="Completude das medições" stroke="var(--success)" strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -74,31 +76,31 @@ export function TendenciaChart({ data }: { data: MonthlyTrendPoint[] }) {
 }
 
 export function CapacidadeChart({ data }: { data: FamilyCapacityPoint[] }) {
-  const sanitized = data.map((item) => ({ ...item, plotValue: item.utilization ?? 0 }));
+  const hasRealUtilization = data.some((item) => item.utilization !== null && item.utilization !== undefined);
+  if (!hasRealUtilization) {
+    return (
+      <div className="flex h-[245px] flex-col items-center justify-center rounded-xl bg-surface/50 px-5 text-center">
+        <p className="text-sm font-medium">Percentual de utilização não homologado</p>
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+          A telemetria de UPS, RPP, CAG e GMG está disponível, mas os limites nominais necessários para comparar famílias em percentual ainda não fazem parte da regra aprovada.
+        </p>
+      </div>
+    );
+  }
 
+  const sanitized = data.map((item) => ({ ...item, plotValue: item.utilization ?? 0 }));
   return (
     <div>
-      <Legend
-        items={[
-          { label: 'Indicador disponível', color: 'var(--primary)' },
-          { label: 'Limite de referência', color: 'var(--critical)', dashed: true },
-        ]}
-      />
+      <Legend items={[{ label: 'Utilização (%)', color: 'var(--primary)' }, { label: 'Limite de referência', color: 'var(--critical)', dashed: true }]} />
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={sanitized} margin={{ top: 18, right: 12, left: -12, bottom: 0 }}>
           <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
           <XAxis dataKey="family" {...axis} />
-          <YAxis domain={[0, 500]} ticks={[0, 100, 200, 300, 400, 500]} {...axis} />
+          <YAxis domain={[0, 150]} ticks={[0, 30, 60, 90, 120, 150]} {...axis} />
           <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'var(--accent)' }} />
           <ReferenceLine y={100} stroke="var(--critical)" strokeDasharray="6 4" />
-          <Bar dataKey="plotValue" name="Indicador" fill="var(--primary)" radius={[3, 3, 0, 0]} isAnimationActive={false}>
-            <LabelList
-              dataKey="utilization"
-              position="top"
-              fontSize={11}
-              fill="var(--foreground)"
-              formatter={(v: number | null) => (v == null ? 'N/D' : `${v.toFixed(1).replace('.', ',')}`)}
-            />
+          <Bar dataKey="plotValue" name="Utilização" fill="var(--primary)" radius={[3, 3, 0, 0]} isAnimationActive={false}>
+            <LabelList dataKey="utilization" position="top" fontSize={11} fill="var(--foreground)" formatter={(v: number | null) => (v == null ? 'N/D' : `${v.toFixed(1).replace('.', ',')}%`)} />
           </Bar>
         </BarChart>
       </ResponsiveContainer>

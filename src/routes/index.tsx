@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 
 import { AppShell } from '@/components/dashboard/AppShell';
+import { PageState } from '@/components/dashboard/PageState';
 import { Panel } from '@/components/dashboard/Panel';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { TendenciaChart, CapacidadeChart } from '@/components/dashboard/Charts';
@@ -33,8 +34,20 @@ const origemTone = ['text-success bg-success/12', 'text-primary bg-primary/12', 
 const origemValueTone = ['text-success', 'text-primary', 'text-warning'];
 
 function VisaoExecutiva() {
-  const { data, isPending } = useDashboard();
-  if (isPending || !data) return null;
+  const dashboardQuery = useDashboard();
+  if (dashboardQuery.isPending) {
+    return <PageState loading title="Carregando dados" description="Consultando o backend n8n e o Redis..." />;
+  }
+  if (dashboardQuery.isError || !dashboardQuery.data) {
+    return (
+      <PageState
+        title="Backend indisponível"
+        description={dashboardQuery.error instanceof Error ? dashboardQuery.error.message : 'Não foi possível carregar os dados.'}
+        onRetry={() => void dashboardQuery.refetch()}
+      />
+    );
+  }
+  const data = dashboardQuery.data;
 
   return (
     <AppShell
@@ -53,7 +66,7 @@ function VisaoExecutiva() {
           <p className="text-sm leading-relaxed text-muted-foreground">{data.overview.executiveSummary}</p>
         </Panel>
 
-        <Panel title="Ativos Críticos" icon={AlertTriangle} iconClassName="text-critical">
+        <Panel title="Riscos Operacionais" icon={AlertTriangle} iconClassName="text-critical">
           <ul className="space-y-2">
             {data.overview.criticalAssets.map((item) => (
               <li key={item} className="flex items-center gap-2 rounded-lg bg-critical/8 px-3 py-2 text-sm">
@@ -99,7 +112,7 @@ function VisaoExecutiva() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-4">
-        <Panel title="Tendência Mensal" icon={LineChart} className="xl:col-span-2" action={<Info className="h-4 w-4 text-muted-foreground" />}>
+        <Panel title="Tendência do Período" icon={LineChart} className="xl:col-span-2" action={<Info className="h-4 w-4 text-muted-foreground" />}>
           <TendenciaChart data={data.overview.trendMonthly} />
         </Panel>
 

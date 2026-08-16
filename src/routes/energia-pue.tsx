@@ -1,17 +1,30 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Bolt, BatteryCharging, Gauge, TowerControl } from 'lucide-react';
 import { AppShell } from '@/components/dashboard/AppShell';
+import { PageState } from '@/components/dashboard/PageState';
 import { Panel } from '@/components/dashboard/Panel';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { StatusBadge } from '@/components/dashboard/StatusBadge';
 import { useDashboard } from '@/hooks/useDashboard';
-import { formatCompactNumber } from '@/lib/format-dashboard';
+import { availabilityTone, formatCompactNumber } from '@/lib/format-dashboard';
 
 export const Route = createFileRoute('/energia-pue')({ component: EnergiaPuePage });
 
 function EnergiaPuePage() {
-  const { data, isPending } = useDashboard();
-  if (isPending || !data) return null;
+  const dashboardQuery = useDashboard();
+  if (dashboardQuery.isPending) {
+    return <PageState loading title="Carregando dados" description="Consultando o backend n8n e o Redis..." />;
+  }
+  if (dashboardQuery.isError || !dashboardQuery.data) {
+    return (
+      <PageState
+        title="Backend indisponível"
+        description={dashboardQuery.error instanceof Error ? dashboardQuery.error.message : 'Não foi possível carregar os dados.'}
+        onRetry={() => void dashboardQuery.refetch()}
+      />
+    );
+  }
+  const data = dashboardQuery.data;
 
   return (
     <AppShell
@@ -37,7 +50,7 @@ function EnergiaPuePage() {
                     <p className="font-medium">{ups.name}</p>
                     <p className="text-xs text-muted-foreground">Pico em {ups.peakTimestamp}</p>
                   </div>
-                  <StatusBadge label="Disponível" tone="ok" />
+                  <StatusBadge label={ups.status === 'AVAILABLE' ? 'Disponível' : 'Não disponível'} tone={availabilityTone(ups.status)} />
                 </div>
                 <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
                   <div><p className="text-muted-foreground">Média</p><p className="font-semibold">{formatCompactNumber(ups.avg, ' kVA')}</p></div>

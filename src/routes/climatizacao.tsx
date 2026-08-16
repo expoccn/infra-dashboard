@@ -1,16 +1,29 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Snowflake, ThermometerSun } from 'lucide-react';
 import { AppShell } from '@/components/dashboard/AppShell';
+import { PageState } from '@/components/dashboard/PageState';
 import { Panel } from '@/components/dashboard/Panel';
 import { StatusBadge } from '@/components/dashboard/StatusBadge';
 import { useDashboard } from '@/hooks/useDashboard';
-import { formatCompactNumber } from '@/lib/format-dashboard';
+import { availabilityTone, formatCompactNumber } from '@/lib/format-dashboard';
 
 export const Route = createFileRoute('/climatizacao')({ component: ClimatizacaoPage });
 
 function ClimatizacaoPage() {
-  const { data, isPending } = useDashboard();
-  if (isPending || !data) return null;
+  const dashboardQuery = useDashboard();
+  if (dashboardQuery.isPending) {
+    return <PageState loading title="Carregando dados" description="Consultando o backend n8n e o Redis..." />;
+  }
+  if (dashboardQuery.isError || !dashboardQuery.data) {
+    return (
+      <PageState
+        title="Backend indisponível"
+        description={dashboardQuery.error instanceof Error ? dashboardQuery.error.message : 'Não foi possível carregar os dados.'}
+        onRetry={() => void dashboardQuery.refetch()}
+      />
+    );
+  }
+  const data = dashboardQuery.data;
 
   return (
     <AppShell
@@ -41,9 +54,9 @@ function ClimatizacaoPage() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="font-medium">{item.name}</p>
-                    <p className="text-sm text-muted-foreground">Carga térmica média e pico mensal</p>
+                    <p className="text-sm text-muted-foreground">Carga térmica média e pico do período selecionado</p>
                   </div>
-                  <StatusBadge label="Disponível" tone="ok" />
+                  <StatusBadge label={item.status === 'AVAILABLE' ? 'Disponível' : 'Não disponível'} tone={availabilityTone(item.status)} />
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
                   <div><p className="text-muted-foreground">TR médio</p><p className="font-semibold">{formatCompactNumber(item.avgTr, ' TR')}</p></div>
@@ -62,12 +75,12 @@ function ClimatizacaoPage() {
                   <p className="font-medium">Situação do monitoramento</p>
                   <p className="text-sm text-muted-foreground">{data.operational.vac.note}</p>
                 </div>
-                <StatusBadge label="Cobertura parcial" tone="warn" />
+                <StatusBadge label={data.operational.vac.status === 'AVAILABLE' ? `${data.operational.vac.coveragePct.toFixed(2).replace('.', ',')}% cobertura` : 'Não disponível'} tone={availabilityTone(data.operational.vac.status)} />
               </div>
             </div>
             <div className="rounded-xl bg-surface px-4 py-3">
               <p className="text-sm text-muted-foreground">Ativos monitorados</p>
-              <p className="mt-1 font-semibold">{data.operational.vac.monitoredAssets.join(', ')}</p>
+              <p className="mt-1 font-semibold">{data.operational.vac.monitoredAssets.join(', ') || 'Não identificado no payload atual'}</p>
             </div>
           </div>
         </Panel>

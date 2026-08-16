@@ -1,9 +1,10 @@
-import { CalendarDays, ChevronDown, CloudUpload } from 'lucide-react';
+import { CloudUpload } from 'lucide-react';
+import { periodLabels, usePeriod } from '@/context/PeriodContext';
 import type { DashboardPayload } from '@/types/dashboard';
+import type { PeriodType } from '@/types/api';
+import { cn } from '@/lib/utils';
 
-function formatPct(value: number) {
-  return `${value.toFixed(2).replace('.', ',')}%`;
-}
+const periods: PeriodType[] = ['d1', '7d', '30d'];
 
 export function Header({
   data,
@@ -14,11 +15,11 @@ export function Header({
   title: string;
   description?: string;
 }) {
-  const baseLabel = data.header.referenceMode === 'D1' ? 'Base D-1' : 'Último dado disponível';
-  const referencia =
-    data.header.referenceMode === 'D1'
-      ? `${data.header.referenceDate} (ontem)`
-      : `${data.header.referenceDate} · último Redis válido`;
+  const { period, setPeriod } = usePeriod();
+  const baseLabel = data.header.referenceMode === 'D1' ? 'D-1 cronológico' : 'Último dado disponível';
+  const rangeLabel = data.period.validDays > 1
+    ? `${data.period.startDate} → ${data.period.endDate}`
+    : data.header.referenceDate;
 
   return (
     <header className="border-b border-border pb-5">
@@ -28,44 +29,74 @@ export function Header({
           <p className="mt-1 text-sm">
             <span className="font-medium text-primary">{data.header.site}</span>
             <span className="px-2 text-muted-foreground">|</span>
-            <span className="text-muted-foreground">Competência: {data.header.competence}</span>
+            <span className="text-muted-foreground">Competência da referência: {data.header.competence}</span>
           </p>
           {description ? <p className="mt-3 max-w-4xl text-sm text-muted-foreground">{description}</p> : null}
         </div>
 
-        <span className="rounded-lg bg-primary/15 px-3 py-1.5 text-sm font-medium text-primary">{baseLabel}</span>
+        <span className={cn(
+          'rounded-lg px-3 py-1.5 text-sm font-medium',
+          data.header.stale ? 'bg-warning/15 text-warning' : 'bg-success/15 text-success',
+        )}>
+          {baseLabel}
+        </span>
 
         <div className="text-xs">
-          <p className="text-muted-foreground">Dados de referência:</p>
-          <p className="mt-0.5 font-medium">{referencia}</p>
+          <p className="text-muted-foreground">Período analisado:</p>
+          <p className="mt-0.5 font-medium">{rangeLabel}</p>
+          <p className="mt-0.5 text-muted-foreground">
+            {data.period.validDays}/{data.period.requestedDays} dias válidos
+          </p>
         </div>
 
         <div className="flex items-center gap-2 border-l border-border pl-6 text-xs">
           <CloudUpload className="h-4.5 w-4.5 text-muted-foreground" />
           <div>
-            <p className="font-medium">Última carga {data.header.generatedAt.split(' ').slice(-1)[0] ?? data.header.generatedAt}</p>
-            <p className="mt-0.5 text-muted-foreground">Ingestão via workflows n8n</p>
+            <p className="font-medium">Atualizado {data.header.generatedAt}</p>
+            <p className="mt-0.5 text-muted-foreground">Backend n8n · Redis</p>
           </div>
         </div>
 
         <div className="border-l border-border pl-6 text-xs">
-          <p className="text-muted-foreground">Completude dos dados</p>
+          <p className="text-muted-foreground">Completude das medições</p>
           <div className="mt-1 flex items-center gap-2">
             <span className="text-sm font-semibold text-primary">{Math.round(data.completion.measurementCompletenessPct)}%</span>
             <span className="h-1.5 w-28 overflow-hidden rounded-full bg-muted">
-              <span className="block h-full rounded-full bg-primary" style={{ width: `${Math.max(0, Math.min(100, data.completion.measurementCompletenessPct))}%` }} />
+              <span
+                className="block h-full rounded-full bg-primary"
+                style={{ width: `${Math.max(0, Math.min(100, data.completion.measurementCompletenessPct))}%` }}
+              />
             </span>
           </div>
         </div>
+      </div>
 
-        <button
-          type="button"
-          className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium"
-        >
-          <CalendarDays className="h-4 w-4 text-primary" />
-          {data.header.competence}
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-        </button>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-xs text-muted-foreground">Período:</span>
+        {periods.map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => setPeriod(item)}
+            className={cn(
+              'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
+              period === item
+                ? 'border-primary bg-primary/15 text-primary'
+                : 'border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground',
+            )}
+          >
+            {periodLabels[item]}
+          </button>
+        ))}
+        {data.period.partialHistory ? (
+          <span className="ml-2 rounded-md bg-warning/12 px-2.5 py-1 text-xs font-medium text-warning">
+            Histórico parcial
+          </span>
+        ) : null}
+        <span className="ml-auto text-xs text-muted-foreground">
+          D-1 cronológico: {data.header.expectedD1}
+          {data.header.stale ? ` · defasagem ${data.header.daysLag} dias` : ''}
+        </span>
       </div>
     </header>
   );
