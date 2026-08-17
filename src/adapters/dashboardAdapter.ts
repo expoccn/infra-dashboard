@@ -169,11 +169,14 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
   const manualRacks = response.manual?.racks?.data || null;
   const manualMaintenance = response.manual?.maintenance?.data || null;
   const manualCompetence = response.header.competence;
+  const maintenanceManagement = response.maintenance_management || null;
+  const maintenanceManagementAvailable = maintenanceManagement?.status === 'AVAILABLE' && Boolean(maintenanceManagement.corrections);
 
   const pendingData = [
     ...unavailableModules,
     ...(manualRacks ? [] : ['Racks']),
-    ...(manualMaintenance ? [] : ['Manutenção']),
+    ...(maintenanceManagementAvailable ? [] : ['Gestão de Manutenção']),
+    ...(manualMaintenance ? [] : ['Preventivas']),
     ...(response.operational.availability?.cag_rule === 'PENDING_VALIDATION' ? ['Disponibilidade CAG'] : []),
   ];
 
@@ -187,6 +190,16 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
   if (measurementCompletenessPct < 99) {
     attention.push(`Completude das medições: ${formatPct(measurementCompletenessPct)}`);
   }
+  if (maintenanceManagementAvailable) {
+    const pendingCorrections = numeric(maintenanceManagement?.corrections?.pending);
+    const partsRequired = numeric(maintenanceManagement?.corrections?.depends_on_part);
+    const offlineIntegrations = numeric(maintenanceManagement?.integrations?.offline);
+    const manualEquipment = numeric(maintenanceManagement?.manual_equipment?.total);
+    if (pendingCorrections > 0) attention.push(`${pendingCorrections} corretivas pendentes na gestão de manutenção`);
+    if (partsRequired > 0) attention.push(`${partsRequired} corretivas dependem de peça`);
+    if (offlineIntegrations > 0) attention.push(`${offlineIntegrations} integrações offline`);
+    if (manualEquipment > 0) attention.push(`${manualEquipment} equipamentos mantidos em manual`);
+  }
   if (!attention.length) attention.push('Nenhuma pendência de atualização identificada no período selecionado');
 
   const sourceWarnings = sources
@@ -199,28 +212,44 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
   const periodText = response.period.valid_days === 1
     ? '1 dia válido'
     : `${response.period.valid_days} dias válidos`;
+  const maintenanceAvailability = maintenanceManagement?.availability?.current?.total_calculated;
+  const maintenanceAvailabilityPct = maintenanceAvailability == null ? null : maintenanceAvailability * 100;
+  const maintenanceSummaryText = maintenanceManagementAvailable
+    ? ` A gestão de manutenção registra ${numeric(maintenanceManagement?.corrections?.pending)} corretivas pendentes, ${numeric(maintenanceManagement?.corrections?.solved)} solucionadas, ${numeric(maintenanceManagement?.manual_equipment?.total)} equipamentos mantidos em manual e ${numeric(maintenanceManagement?.integrations?.offline)} integrações offline.${maintenanceAvailabilityPct == null ? '' : ` A disponibilidade consolidada do último ciclo é ${formatPct(maintenanceAvailabilityPct)}.`}`
+    : '';
+
   const executiveSummary = `${response.period.label}: ${periodText}, encerrando em ${formatDateBr(response.period.reference_date)}. ` +
     `A cobertura média das fontes foi ${formatPct(sourceCompletenessPct)} e a completude média das medições foi ${formatPct(measurementCompletenessPct)}. ` +
     `${receivedSources}/${expectedSources} tipos de fonte possuem dados no período. ` +
     (response.header.stale
       ? `A referência exibida é o último dado válido disponível e está ${response.header.days_lag ?? 0} dias atrás do D-1 cronológico.`
-      : 'A referência coincide com o D-1 cronológico.');
+      : 'A referência coincide com o D-1 cronológico.') +
+    maintenanceSummaryText;
 
-  const maintenanceKpi: OverviewKpi = manualMaintenance
+  const maintenanceKpi: OverviewKpi = maintenanceManagementAvailable
     ? {
         label: 'Manutenção',
-        value: `${manualMaintenance.completed} / ${manualMaintenance.planned}`,
-        badge: `${formatPct(manualMaintenance.completion_pct)} realizadas`,
-        status: manualMaintenance.completion_pct >= 100 ? 'ok' : 'warn',
+        value: `${numeric(maintenanceManagement?.corrections?.pending)} pendentes`,
+        badge: `${numeric(maintenanceManagement?.corrections?.solved)} solucionadas`,
+        ...(maintenanceManagement?.cycle?.latest_cycle == null ? {} : { subtitle: `${maintenanceManagement.cycle.latest_cycle}º ciclo` }),
+        status: numeric(maintenanceManagement?.corrections?.pending) > 0 ? 'warn' : 'ok',
         icon: 'clipboard' as const,
       }
-    : {
-        label: 'Manutenção',
-        value: 'Aguardando entrada',
-        badge: 'Manual',
-        status: 'pending' as const,
-        icon: 'clipboard' as const,
-      };
+    : manualMaintenance
+      ? {
+          label: 'Preventivas',
+          value: `${manualMaintenance.completed} / ${manualMaintenance.planned}`,
+          badge: `${formatPct(manualMaintenance.completion_pct)} realizadas`,
+          status: manualMaintenance.completion_pct >= 100 ? 'ok' : 'warn',
+          icon: 'clipboard' as const,
+        }
+      : {
+          label: 'Manutenção',
+          value: 'Aguardando base',
+          badge: 'Importação pendente',
+          status: 'pending' as const,
+          icon: 'clipboard' as const,
+        };
 
   const racksKpi: OverviewKpi = manualRacks
     ? {
@@ -328,10 +357,10 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
       familyCapacity,
       sourceOrigins: [
         { title: 'CSV automático', description: 'WebCTRL via CSV', value: 7, status: 'ok' },
-        { title: 'Lançamento manual', description: 'Racks e manutenção', value: 2, status: 'info' },
-        { title: 'Sem fonte', description: 'Indicadores fora do escopo atual', value: unavailableModules.length, status: 'warn' },
+        { title: 'Gestão de manutenção', description: maintenanceManagementAvailable ? 'Planilha atualizada' : 'Aguardando importação', value: maintenanceManagementAvailable ? 1 : 0, status: maintenanceManagementAvailable ? 'ok' : 'warn' },
+        { title: 'Lançamento manual', description: 'Racks e preventivas', value: 2, status: 'info' },
       ],
-      totalSources: 7 + 2 + unavailableModules.length,
+      totalSources: 7 + 2 + (maintenanceManagementAvailable ? 1 : 0),
     },
     sources,
     daily: response.daily.map((day) => ({

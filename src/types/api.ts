@@ -18,6 +18,53 @@ export interface SourceCoverage {
   valid_coverage_pct: number | null;
 }
 
+
+export interface MaintenanceManagementDashboardSummary {
+  schema_version?: number;
+  site?: string;
+  module?: string;
+  status: 'AVAILABLE' | 'NOT_IMPORTED' | string;
+  source?: string;
+  import?: MaintenanceImportMeta;
+  cycle?: {
+    available_cycles?: number[];
+    latest_cycle?: number | null;
+  };
+  corrections?: MaintenanceCorrectionSummary | null;
+  corrections_latest_cycle?: MaintenanceCorrectionSummary | null;
+  manual_equipment?: {
+    total: number;
+    by_reason?: Record<string, number>;
+    by_type?: Record<string, number>;
+  } | null;
+  integrations?: {
+    total: number;
+    online: number;
+    offline: number;
+    online_pct: number;
+    by_protocol?: Record<string, number>;
+  } | null;
+  panels?: {
+    total: number;
+    issues: number;
+    unknown: number;
+    project_absent: number;
+    source_deenergized: number;
+    ac_input_deenergized: number;
+  } | null;
+  availability?: {
+    initial: MaintenanceAvailabilityItem | null;
+    previous: MaintenanceAvailabilityItem | null;
+    current: MaintenanceAvailabilityItem | null;
+  } | null;
+  data_quality?: {
+    formula_total_recalculated: boolean;
+    panel_dash_is_neutral: boolean;
+    status_note_inconsistencies: number;
+  } | null;
+  message?: string;
+}
+
 export interface DashboardApiResponse {
   ok: boolean;
   schema_version: number;
@@ -63,6 +110,7 @@ export interface DashboardApiResponse {
     };
     gmg: (Record<string, MetricAggregate> & { kpi_capacity_rule?: string }) | null;
   };
+  maintenance_management?: MaintenanceManagementDashboardSummary | null;
   manual: {
     racks: { status: string; source?: string; data?: RackRecord | null };
     maintenance: { status: string; source?: string; data?: MaintenanceRecord | null };
