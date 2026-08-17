@@ -19,6 +19,7 @@ import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as AnalisesIaRouteImport } from './routes/analises-ia'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AlterarSenhaRouteImport } from './routes/alterar-senha'
+import { Route as UsuariosRouteImport } from './routes/usuarios'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -104,6 +105,12 @@ const AlterarSenhaRoute = AlterarSenhaRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 
+const UsuariosRoute = UsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/energia-pue': typeof EnergiaPueRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/analises-ia': typeof AnalisesIaRoute
   '/login': typeof LoginRoute
   '/alterar-senha': typeof AlterarSenhaRoute
+  '/usuarios': typeof UsuariosRoute
 }
 
 export interface FileRoutesByTo {
@@ -136,6 +144,7 @@ export interface FileRoutesByTo {
   '/analises-ia': typeof AnalisesIaRoute
   '/login': typeof LoginRoute
   '/alterar-senha': typeof AlterarSenhaRoute
+  '/usuarios': typeof UsuariosRoute
 }
 
 export interface FileRoutesById {
@@ -154,13 +163,14 @@ export interface FileRoutesById {
   '/analises-ia': typeof AnalisesIaRoute
   '/login': typeof LoginRoute
   '/alterar-senha': typeof AlterarSenhaRoute
+  '/usuarios': typeof UsuariosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/energia-pue' | '/disponibilidade' | '/manutencao' | '/capacidade' | '/climatizacao' | '/diesel' | '/racks' | '/plano-acao' | '/qualidade-dados' | '/relatorios' | '/analises-ia' | '/login' | '/alterar-senha'
+  fullPaths: '/' | '/energia-pue' | '/disponibilidade' | '/manutencao' | '/capacidade' | '/climatizacao' | '/diesel' | '/racks' | '/plano-acao' | '/qualidade-dados' | '/relatorios' | '/analises-ia' | '/login' | '/alterar-senha' | '/usuarios'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/energia-pue' | '/disponibilidade' | '/manutencao' | '/capacidade' | '/climatizacao' | '/diesel' | '/racks' | '/plano-acao' | '/qualidade-dados' | '/relatorios' | '/analises-ia' | '/login' | '/alterar-senha'
-  id: '__root__' | '/' | '/energia-pue' | '/disponibilidade' | '/manutencao' | '/capacidade' | '/climatizacao' | '/diesel' | '/racks' | '/plano-acao' | '/qualidade-dados' | '/relatorios' | '/analises-ia' | '/login' | '/alterar-senha'
+  to: '/' | '/energia-pue' | '/disponibilidade' | '/manutencao' | '/capacidade' | '/climatizacao' | '/diesel' | '/racks' | '/plano-acao' | '/qualidade-dados' | '/relatorios' | '/analises-ia' | '/login' | '/alterar-senha' | '/usuarios'
+  id: '__root__' | '/' | '/energia-pue' | '/disponibilidade' | '/manutencao' | '/capacidade' | '/climatizacao' | '/diesel' | '/racks' | '/plano-acao' | '/qualidade-dados' | '/relatorios' | '/analises-ia' | '/login' | '/alterar-senha' | '/usuarios'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -178,6 +188,7 @@ export interface RootRouteChildren {
   AnalisesIaRoute: typeof AnalisesIaRoute
   LoginRoute: typeof LoginRoute
   AlterarSenhaRoute: typeof AlterarSenhaRoute
+  UsuariosRoute: typeof UsuariosRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -280,6 +291,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AlterarSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/usuarios': {
+      id: '/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof UsuariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -298,6 +316,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnalisesIaRoute: AnalisesIaRoute,
   LoginRoute: LoginRoute,
   AlterarSenhaRoute: AlterarSenhaRoute,
+  UsuariosRoute: UsuariosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

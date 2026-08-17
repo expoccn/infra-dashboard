@@ -8,6 +8,10 @@ import {
   fetchReport,
   saveMaintenance,
   saveRacks,
+  fetchAdminUsers,
+  createAdminUser,
+  updateAdminUser,
+  resetAdminUserPassword,
 } from '@/services/api';
 
 export function useHealth() {
@@ -79,5 +83,46 @@ export function useReport() {
     queryFn: () => fetchReport(period),
     staleTime: 60 * 1000,
     retry: 1,
+  });
+}
+
+
+export function useAdminUsers(enabled = true) {
+  return useQuery({
+    queryKey: ['admin-users'],
+    queryFn: fetchAdminUsers,
+    enabled,
+    staleTime: 30 * 1000,
+    retry: 1,
+  });
+}
+
+export function useCreateAdminUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createAdminUser,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+  });
+}
+
+export function useUpdateAdminUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateAdminUser,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+  });
+}
+
+export function useResetAdminUserPassword() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: resetAdminUserPassword,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
   });
 }

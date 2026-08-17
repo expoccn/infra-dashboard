@@ -9,11 +9,9 @@ import { useAuth } from '@/context/AuthContext';
 export const Route = createFileRoute('/alterar-senha')({ component: ChangePasswordPage });
 
 const validPassword = (value: string) =>
-  value.length >= 12 &&
+  value.length >= 8 &&
   value.length <= 72 &&
-  /[a-z]/.test(value) &&
   /[A-Z]/.test(value) &&
-  /\d/.test(value) &&
   /[^A-Za-z0-9]/.test(value);
 
 function ChangePasswordPage() {
@@ -30,7 +28,7 @@ function ChangePasswordPage() {
     event.preventDefault();
     setError('');
     if (!validPassword(newPassword)) {
-      setError('A nova senha deve ter de 12 a 72 caracteres, com maiúscula, minúscula, número e caractere especial.');
+      setError('A nova senha deve ter de 8 a 72 caracteres, com pelo menos uma letra maiúscula e um caractere especial.');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -86,7 +84,7 @@ function ChangePasswordPage() {
           </div>
 
           <div className="rounded-xl bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-500">
-            Use no mínimo 12 caracteres, incluindo letra maiúscula, letra minúscula, número e caractere especial.
+            Use no mínimo 8 caracteres, incluindo pelo menos uma letra maiúscula e um caractere especial.
           </div>
           {error ? <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{error}</div> : null}
           {success ? <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700"><CheckCircle2 className="h-4 w-4" /> Senha alterada. Entre novamente.</div> : null}

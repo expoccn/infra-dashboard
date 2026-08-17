@@ -11,7 +11,7 @@ import type {
   ReportResponse,
   SaveResponse,
 } from '@/types/api';
-import type { ChangePasswordResponse, LoginResponse, LogoutResponse, MeResponse } from '@/types/auth';
+import type { AdminCreateUserResponse, AdminResetPasswordResponse, AdminUpdateUserResponse, AdminUsersResponse, ChangePasswordResponse, LoginResponse, LogoutResponse, MeResponse } from '@/types/auth';
 import { getAccessToken, notifyAuthExpired } from '@/lib/authStorage';
 
 export const DATA_API_BASE_URL = (
@@ -171,5 +171,31 @@ export function changeAccessPassword(currentPassword: string, newPassword: strin
       current_password: currentPassword,
       new_password: newPassword,
     }),
+  });
+}
+
+
+export function fetchAdminUsers() {
+  return apiRequest<AdminUsersResponse>('/auth/admin-users');
+}
+
+export function createAdminUser(payload: { username: string; display_name: string; role: 'ADMIN' | 'VIEWER' }) {
+  return apiRequest<AdminCreateUserResponse>('/auth/admin-create-user', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAdminUser(payload: { user_id: string; display_name: string; role: 'ADMIN' | 'VIEWER'; active: boolean }) {
+  return apiRequest<AdminUpdateUserResponse>('/auth/admin-update-user', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function resetAdminUserPassword(userId: string) {
+  return apiRequest<AdminResetPasswordResponse>('/auth/admin-reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ user_id: userId }),
   });
 }

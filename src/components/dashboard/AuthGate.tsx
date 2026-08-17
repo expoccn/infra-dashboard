@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 
 const LOGIN_PATH = '/login';
 const PASSWORD_PATH = '/alterar-senha';
+const ADMIN_USERS_PATH = '/usuarios';
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const { status, user } = useAuth();
@@ -26,8 +27,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
     if (status === 'authenticated' && !user?.must_change_password && pathname === LOGIN_PATH) {
       void navigate({ to: '/', replace: true });
+      return;
     }
-  }, [navigate, pathname, status, user?.must_change_password]);
+
+    if (status === 'authenticated' && !user?.must_change_password && pathname.startsWith(ADMIN_USERS_PATH) && user?.role !== 'ADMIN') {
+      void navigate({ to: '/', replace: true });
+    }
+  }, [navigate, pathname, status, user?.must_change_password, user?.role]);
 
   const allowed =
     status === 'unauthenticated'
@@ -35,7 +41,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
       : status === 'authenticated'
         ? user?.must_change_password
           ? pathname === PASSWORD_PATH
-          : pathname !== LOGIN_PATH
+          : pathname !== LOGIN_PATH && (!pathname.startsWith(ADMIN_USERS_PATH) || user?.role === 'ADMIN')
         : false;
 
   if (!allowed) {
