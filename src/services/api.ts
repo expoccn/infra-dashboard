@@ -4,6 +4,9 @@ import type {
   HistoryResponse,
   MaintenanceGetResponse,
   MaintenanceRecord,
+  MaintenanceManagementResponse,
+  MaintenanceImportResponse,
+  MaintenanceCycleRequest,
   DashboardApiResponse,
   PeriodType,
   RackRecord,
@@ -46,9 +49,9 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+export async function apiRequest<T>(path: string, init?: RequestInit, timeoutMs = 15000): Promise<T> {
   const controller = new AbortController();
-  const timeout = globalThis.setTimeout(() => controller.abort(), 15000);
+  const timeout = globalThis.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(`${DATA_API_BASE_URL}${path}`, {
@@ -56,7 +59,7 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
       signal: controller.signal,
       headers: {
         Accept: 'application/json',
-        ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(init?.body && !(typeof FormData !== 'undefined' && init.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
         ...(getAccessToken() ? { Authorization: `Bearer ${getAccessToken()}` } : {}),
         ...(init?.headers || {}),
       },
@@ -142,6 +145,21 @@ export function saveMaintenance(payload: {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+}
+
+
+
+export function fetchMaintenanceManagement(cycle: MaintenanceCycleRequest = 'latest') {
+  return apiRequest<MaintenanceManagementResponse>(`/maintenance-data?cycle=${encodeURIComponent(String(cycle))}`);
+}
+
+export function importMaintenanceWorkbook(file: File) {
+  const formData = new FormData();
+  formData.append('file', file, file.name);
+  return apiRequest<MaintenanceImportResponse>('/maintenance-import', {
+    method: 'POST',
+    body: formData,
+  }, 60000);
 }
 
 export function fetchReport(period: PeriodType) {

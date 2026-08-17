@@ -4,6 +4,8 @@ import {
   fetchHealth,
   fetchHistory,
   fetchMaintenance,
+  fetchMaintenanceManagement,
+  importMaintenanceWorkbook,
   fetchRacks,
   fetchReport,
   saveMaintenance,
@@ -70,6 +72,31 @@ export function useSaveMaintenance() {
     onSuccess: async (result) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['maintenance', result.data.competence] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+      ]);
+    },
+  });
+}
+
+
+
+export function useMaintenanceManagement(cycle: 'latest' | 'all' | number = 'latest') {
+  return useQuery({
+    queryKey: ['maintenance-management', cycle],
+    queryFn: () => fetchMaintenanceManagement(cycle),
+    staleTime: 60 * 1000,
+    retry: 1,
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useImportMaintenanceWorkbook() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: importMaintenanceWorkbook,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['maintenance-management'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
       ]);
     },

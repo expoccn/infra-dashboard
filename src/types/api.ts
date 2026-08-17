@@ -199,3 +199,164 @@ export interface ApiErrorBody {
   error?: string;
   message?: string;
 }
+
+export type MaintenanceCycleRequest = 'latest' | 'all' | number;
+
+export interface MaintenanceImportMeta {
+  import_id: string;
+  file_name: string | null;
+  imported_at: string;
+  imported_by: string | null;
+  imported_by_username: string | null;
+}
+
+export interface MaintenanceCorrectionItem {
+  cluster: string | null;
+  state: string | null;
+  site: 'RJO-AM';
+  cycle_no: number | null;
+  cycle_label: string | null;
+  condition: string | null;
+  discipline: string | null;
+  equipment: string | null;
+  occurrence: string | null;
+  action: string | null;
+  depends_on_part: boolean;
+  depends_on_part_raw: string | null;
+  solution_cycle_no: number | null;
+  technician: string | null;
+  panel: string | null;
+  tag: string | null;
+  responsible: string | null;
+  notes: string | null;
+  status_note_inconsistency: boolean;
+}
+
+export interface MaintenanceManualEquipmentItem {
+  cluster: string | null;
+  site: 'RJO-AM';
+  machine: string | null;
+  equipment_type: string | null;
+  panel: string | null;
+  controller: string | null;
+  address: string | null;
+  reason: string | null;
+  final_condition: string | null;
+}
+
+export interface MaintenancePanelItem {
+  cluster: string | null;
+  site: 'RJO-AM';
+  panel: string | null;
+  location: string | null;
+  relay: string | null;
+  source: string | null;
+  dps: string | null;
+  earth: string | null;
+  project: string | null;
+  ac_input: string | null;
+  status: 'OK' | 'ISSUE' | 'UNKNOWN';
+  issue_fields: string[];
+}
+
+export interface MaintenanceIntegrationItem {
+  cluster: string | null;
+  site: 'RJO-AM';
+  manager_port: string | null;
+  equipment: string | null;
+  status: 'Online' | 'Offline' | string | null;
+  protocol: string | null;
+}
+
+export interface MaintenanceAvailabilityItem {
+  cycle_no: number | null;
+  cycle_label: string | null;
+  cluster: string | null;
+  site: 'RJO-AM';
+  comm: number | null;
+  local: number | null;
+  integration: number | null;
+  instrumentation: number | null;
+  total_calculated: number | null;
+  cag: string | null;
+  cac: string | null;
+}
+
+export interface MaintenanceCorrectionSummary {
+  total: number;
+  pending: number;
+  solved: number;
+  solution_pct: number;
+  depends_on_part: number;
+  by_discipline: Record<string, number>;
+  by_occurrence: Record<string, number>;
+}
+
+export interface MaintenanceManagementResponse {
+  ok: boolean;
+  schema_version: number;
+  site: string;
+  source: 'PLANILHA_MANUTENCAO';
+  import: MaintenanceImportMeta;
+  cycle: {
+    requested: string;
+    selected_cycle: number | 'all' | null;
+    selected_label: string;
+    available_cycles: number[];
+    latest_cycle: number | null;
+  };
+  summary: {
+    corrections: MaintenanceCorrectionSummary;
+    corrections_by_cycle: Record<string, MaintenanceCorrectionSummary>;
+    manual_equipment: {
+      total: number;
+      by_reason: Record<string, number>;
+      by_type: Record<string, number>;
+    };
+    integrations: {
+      total: number;
+      online: number;
+      offline: number;
+      online_pct: number;
+      by_protocol: Record<string, number>;
+    };
+    panels: {
+      total: number;
+      issues: number;
+      unknown: number;
+      project_absent: number;
+      source_deenergized: number;
+      ac_input_deenergized: number;
+    };
+    availability: {
+      initial: MaintenanceAvailabilityItem | null;
+      previous: MaintenanceAvailabilityItem | null;
+      current: MaintenanceAvailabilityItem | null;
+      selected: MaintenanceAvailabilityItem | null;
+    };
+  };
+  data_quality: {
+    formula_total_recalculated: boolean;
+    panel_dash_is_neutral: boolean;
+    status_note_inconsistencies: number;
+  };
+  datasets: {
+    corrections: MaintenanceCorrectionItem[];
+    manual_equipment: MaintenanceManualEquipmentItem[];
+    panels: MaintenancePanelItem[];
+    integrations: MaintenanceIntegrationItem[];
+    availability: MaintenanceAvailabilityItem[];
+  };
+}
+
+export interface MaintenanceImportResponse {
+  ok: boolean;
+  imported: boolean;
+  import: MaintenanceImportMeta;
+  cycle: {
+    available_cycles: number[];
+    latest_cycle: number | null;
+  };
+  summary: MaintenanceManagementResponse['summary'];
+  data_quality: MaintenanceManagementResponse['data_quality'];
+}

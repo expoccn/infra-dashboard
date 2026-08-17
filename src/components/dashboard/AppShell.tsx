@@ -7,18 +7,20 @@ export function AppShell({
   title,
   description,
   data,
+  headerMode = 'operational',
   children,
 }: {
   title: string;
   description?: string;
   data: DashboardPayload;
+  headerMode?: 'operational' | 'maintenance';
   children: ReactNode;
 }) {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
       <main className="min-w-0 flex-1 space-y-4 p-5 xl:p-6">
-        <Header title={title} description={description} data={data} />
+        <Header title={title} description={description} data={data} mode={headerMode} />
         {children}
       </main>
     </div>

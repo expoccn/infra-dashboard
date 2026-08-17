@@ -1,4 +1,4 @@
-import { CloudUpload } from 'lucide-react';
+import { CloudUpload, FileSpreadsheet } from 'lucide-react';
 import { periodLabels, usePeriod } from '@/context/PeriodContext';
 import type { DashboardPayload } from '@/types/dashboard';
 import type { PeriodType } from '@/types/api';
@@ -11,12 +11,42 @@ export function Header({
   data,
   title,
   description,
+  mode = 'operational',
 }: {
   data: DashboardPayload;
   title: string;
   description?: string;
+  mode?: 'operational' | 'maintenance';
 }) {
   const { period, setPeriod } = usePeriod();
+
+  if (mode === 'maintenance') {
+    return (
+      <header className="border-b border-border pb-5">
+        <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-semibold tracking-tight xl:text-[1.75rem]">{title}</h1>
+            <p className="mt-1 text-sm">
+              <span className="font-medium text-primary">{data.header.site}</span>
+              <span className="px-2 text-muted-foreground">|</span>
+              <span className="text-muted-foreground">Gestão de Manutenção</span>
+            </p>
+            {description ? <p className="mt-3 max-w-4xl text-sm text-muted-foreground">{description}</p> : null}
+          </div>
+
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-xs">
+            <FileSpreadsheet className="h-4.5 w-4.5 text-primary" />
+            <div>
+              <p className="font-medium">Base de manutenção</p>
+              <p className="mt-0.5 text-muted-foreground">Planilha de Gestão de Manutenção</p>
+            </div>
+          </div>
+          <div className="lg:hidden"><ThemeToggle /></div>
+        </div>
+      </header>
+    );
+  }
+
   const baseLabel = data.header.referenceMode === 'D1' ? 'D-1 cronológico' : 'Último dado disponível';
   const rangeLabel = data.period.validDays > 1
     ? `${data.period.startDate} → ${data.period.endDate}`
