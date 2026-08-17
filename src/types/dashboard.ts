@@ -92,7 +92,8 @@ export interface ChillerMetric {
   name: string;
   avgTr: number | null;
   maxTr: number | null;
-  status: DataAvailability;
+  operationalState: 'OPERATED' | 'DID_NOT_OPERATE' | 'NO_DATA';
+  operatingHours: number | null;
 }
 
 export interface ManualModule<T = unknown> {
@@ -155,11 +156,29 @@ export interface DashboardPayload {
       peakTimestamp: string | null;
       chillers: ChillerMetric[];
     };
+    pue: {
+      status: DataAvailability;
+      value: number | null;
+      avg: number | null;
+      min: number | null;
+      max: number | null;
+      peakTimestamp: string | null;
+      daily: Array<{ date: string; value: number }>;
+    };
     vac: {
       status: DataAvailability;
       note: string;
-      coveragePct: number;
+      temporalCoveragePct: number;
+      assetCoveragePct: number;
       monitoredAssets: string[];
+      assets: Array<{
+        name: string;
+        rff: string | null;
+        alm: string | null;
+        status: DataAvailability;
+        availabilityPct: number | null;
+        coveragePct: number;
+      }>;
     };
     disponibilidade: {
       cag: DataAvailability;

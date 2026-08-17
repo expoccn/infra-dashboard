@@ -55,7 +55,7 @@ function VisaoExecutiva() {
       description="Resumo consolidado da referência atual, com destaque para a qualidade das fontes, capacidade instalada, climatização e pendências manuais."
       data={data}
     >
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7">
         {data.overview.kpis.map((kpi) => (
           <KpiCard key={kpi.label} {...kpi} />
         ))}

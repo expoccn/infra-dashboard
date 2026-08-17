@@ -104,9 +104,15 @@ export interface DashboardApiResponse {
       thermal: (Record<string, MetricAggregate> & { availability_rule?: string }) | null;
       vac: Record<string, unknown> | null;
     };
+    pue: {
+      metric: MetricAggregate;
+      daily: Array<{ reference_date: string; pue: number }>;
+    } | null;
     availability: {
       cag_events: Record<string, unknown> | null;
       cag_rule: string;
+      cag_status?: string;
+      vac_rule?: string;
     };
     gmg: (Record<string, MetricAggregate> & { kpi_capacity_rule?: string }) | null;
   };

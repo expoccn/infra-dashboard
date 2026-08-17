@@ -11,16 +11,16 @@ import type {
 
 const SOURCE_LABELS: Record<string, string> = {
   DISP_INFRA_VAC: 'Disponibilidade Infra VAC',
-  CAG_DISP: 'CAG Disponibilidade',
+  CAG_DISP: 'CAG Estado Operacional',
   CAG_TR: 'CAG TR',
   GMG_KVA: 'GMG kVA',
   RPP01: 'RPP 01',
   RPP02: 'RPP 02',
   UPS_KVA: 'UPS kVA',
+  PUE: 'PUE',
 };
 
 const UNAVAILABLE_LABELS: Record<string, string> = {
-  pue: 'PUE',
   disponibilidade_concessionaria: 'Concessionária',
   transformadores: 'Transformadores',
   fcc: 'FCC',
@@ -132,20 +132,37 @@ function rppMetric(name: string, value?: Record<string, MetricAggregate> | null)
   };
 }
 
-function chiller(name: string, metric?: MetricAggregate | null): ChillerMetric {
+function chiller(name: string, metric?: MetricAggregate | null, operation?: Record<string, unknown> | null): ChillerMetric {
+  const rawState = String(operation?.operational_state || 'NO_DATA');
+  const operationalState: ChillerMetric['operationalState'] = rawState === 'OPERATED'
+    ? 'OPERATED'
+    : rawState === 'DID_NOT_OPERATE'
+      ? 'DID_NOT_OPERATE'
+      : 'NO_DATA';
   return {
     name,
     avgTr: nullableNumber(metric?.avg),
     maxTr: nullableNumber(metric?.max),
-    status: metricStatus(metric),
+    operationalState,
+    operatingHours: nullableNumber(operation?.operating_hours),
   };
 }
 
-function findVacAssets(vac: Record<string, unknown> | null): string[] {
-  if (!vac) return [];
-  return Object.keys(vac)
-    .filter((key) => /^ac\d+/i.test(key))
-    .map((key) => key.toUpperCase());
+function vacAssets(vac: Record<string, unknown> | null) {
+  const names = ['ac1201', 'ac1002a', 'ac1202b', 'ac1301'];
+  return names.map((key) => {
+    const value = (vac?.[key] || {}) as Record<string, unknown>;
+    const rawStatus = String(value.status || 'NO_DATA');
+    return {
+      name: key.toUpperCase(),
+      rff: value.last_rff == null ? null : String(value.last_rff),
+      alm: value.last_alm == null ? null : String(value.last_alm),
+      status: rawStatus === 'AVAILABLE' ? 'AVAILABLE' as const : rawStatus === 'UNAVAILABLE' ? 'UNAVAILABLE' as const : 'UNAVAILABLE' as const,
+      availabilityPct: nullableNumber(value.availability_pct),
+      coveragePct: nullableNumber(value.coverage_pct) ?? 0,
+      hasData: rawStatus !== 'NO_DATA',
+    };
+  });
 }
 
 export function adaptDashboardResponse(response: DashboardApiResponse): DashboardPayload {
@@ -165,6 +182,7 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
   const rpp = response.operational.rpp || {};
   const thermal = response.operational.climatization?.thermal || {};
   const vac = response.operational.climatization?.vac || null;
+  const pue = response.operational.pue || null;
 
   const manualRacks = response.manual?.racks?.data || null;
   const manualMaintenance = response.manual?.maintenance?.data || null;
@@ -177,7 +195,6 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
     ...(manualRacks ? [] : ['Racks']),
     ...(maintenanceManagementAvailable ? [] : ['Gestão de Manutenção']),
     ...(manualMaintenance ? [] : ['Preventivas']),
-    ...(response.operational.availability?.cag_rule === 'PENDING_VALIDATION' ? ['Disponibilidade CAG'] : []),
   ];
 
   const attention: string[] = [];
@@ -190,6 +207,8 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
   if (measurementCompletenessPct < 99) {
     attention.push(`Completude das medições: ${formatPct(measurementCompletenessPct)}`);
   }
+  const vacAssetsWithoutData = numeric((vac?.availability as Record<string, unknown> | undefined)?.assets_no_data);
+  if (vacAssetsWithoutData > 0) attention.push(`${vacAssetsWithoutData} ativos VAC sem leitura completa de RFF e ALM`);
   if (maintenanceManagementAvailable) {
     const pendingCorrections = numeric(maintenanceManagement?.corrections?.pending);
     const partsRequired = numeric(maintenanceManagement?.corrections?.depends_on_part);
@@ -199,6 +218,8 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
     if (partsRequired > 0) attention.push(`${partsRequired} corretivas dependem de peça`);
     if (offlineIntegrations > 0) attention.push(`${offlineIntegrations} integrações offline`);
     if (manualEquipment > 0) attention.push(`${manualEquipment} equipamentos mantidos em manual`);
+    const panelIssues = numeric(maintenanceManagement?.panels?.issues);
+    if (panelIssues > 0) attention.push(`${panelIssues} quadros com apontamentos na gestão de manutenção`);
   }
   if (!attention.length) attention.push('Nenhuma pendência de atualização identificada no período selecionado');
 
@@ -214,8 +235,12 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
     : `${response.period.valid_days} dias válidos`;
   const maintenanceAvailability = maintenanceManagement?.availability?.current?.total_calculated;
   const maintenanceAvailabilityPct = maintenanceAvailability == null ? null : maintenanceAvailability * 100;
+  const pueSummaryValue = nullableNumber(pue?.metric?.avg);
+  const pueSummaryText = pueSummaryValue == null
+    ? ''
+    : ` O PUE ${response.period.type === 'd1' ? 'do último dia válido' : 'médio diário do período'} é ${pueSummaryValue.toFixed(2).replace('.', ',')}.`;
   const maintenanceSummaryText = maintenanceManagementAvailable
-    ? ` A gestão de manutenção registra ${numeric(maintenanceManagement?.corrections?.pending)} corretivas pendentes, ${numeric(maintenanceManagement?.corrections?.solved)} solucionadas, ${numeric(maintenanceManagement?.manual_equipment?.total)} equipamentos mantidos em manual e ${numeric(maintenanceManagement?.integrations?.offline)} integrações offline.${maintenanceAvailabilityPct == null ? '' : ` A disponibilidade consolidada do último ciclo é ${formatPct(maintenanceAvailabilityPct)}.`}`
+    ? ` A gestão de manutenção registra ${numeric(maintenanceManagement?.corrections?.pending)} corretivas pendentes, ${numeric(maintenanceManagement?.corrections?.solved)} solucionadas, ${numeric(maintenanceManagement?.manual_equipment?.total)} equipamentos mantidos em manual, ${numeric(maintenanceManagement?.integrations?.offline)} integrações offline e ${numeric(maintenanceManagement?.panels?.total)} quadros avaliados.${maintenanceAvailabilityPct == null ? '' : ` A disponibilidade consolidada do último ciclo é ${formatPct(maintenanceAvailabilityPct)}.`}`
     : '';
 
   const executiveSummary = `${response.period.label}: ${periodText}, encerrando em ${formatDateBr(response.period.reference_date)}. ` +
@@ -224,6 +249,7 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
     (response.header.stale
       ? `A referência exibida é o último dado válido disponível e está ${response.header.days_lag ?? 0} dias atrás do D-1 cronológico.`
       : 'A referência coincide com o D-1 cronológico.') +
+    pueSummaryText +
     maintenanceSummaryText;
 
   const maintenanceKpi: OverviewKpi = maintenanceManagementAvailable
@@ -282,9 +308,14 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
     { family: 'PUE', utilization: null },
   ];
 
-  const vacCoverage = nullableNumber(coverage['DISP_INFRA_VAC']?.valid_coverage_pct) ?? 0;
-  const vacAssets = findVacAssets(vac);
-  const vacAvailable = (coverage['DISP_INFRA_VAC']?.days_valid || 0) > 0;
+  const vacTemporalCoverage = nullableNumber(coverage['DISP_INFRA_VAC']?.valid_coverage_pct) ?? 0;
+  const vacAssetItems = vacAssets(vac);
+  const vacAssetCoverage = nullableNumber((vac?.availability as Record<string, unknown> | undefined)?.asset_coverage_pct) ?? 0;
+  const vacAvailable = vacAssetItems.some((item) => item.hasData);
+  const pueMetric = pue?.metric || null;
+  const pueAvailable = Boolean(pueMetric && numeric(pueMetric.count) > 0);
+  const pueValue = nullableNumber(pueMetric?.avg);
+  const panelsAvailable = maintenanceManagementAvailable && numeric(maintenanceManagement?.panels?.total) > 0;
 
   const gmgRule = response.operational.gmg?.kpi_capacity_rule || 'PENDING_VALIDATION';
 
@@ -324,7 +355,13 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
     },
     overview: {
       kpis: [
-        { label: 'PUE', value: 'Não disponível', badge: 'Sem fonte', status: 'pending', icon: 'pue' },
+        {
+          label: 'PUE',
+          value: pueAvailable && pueValue !== null ? pueValue.toFixed(2).replace('.', ',') : 'Não disponível',
+          badge: pueAvailable ? (response.period.type === 'd1' ? 'Último dia válido' : 'Média diária do período') : 'Sem dados',
+          status: pueAvailable ? 'info' : 'pending',
+          icon: 'pue',
+        },
         {
           label: 'Fontes válidas',
           value: formatPct(validSourceCompletenessPct),
@@ -334,12 +371,18 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
         },
         {
           label: 'Disponibilidade CAG',
-          value: response.operational.availability?.cag_rule === 'PENDING_VALIDATION' ? 'Regra pendente' : 'Disponível',
-          subtitle: 'Telemetria recebida',
-          status: response.operational.availability?.cag_rule === 'PENDING_VALIDATION' ? 'info' : 'ok',
+          value: 'Disponível',
+          status: 'ok',
           icon: 'grid',
         },
         maintenanceKpi,
+        {
+          label: 'Quadros',
+          value: panelsAvailable ? `${numeric(maintenanceManagement?.panels?.total)} avaliados` : 'Não disponível',
+          badge: panelsAvailable ? `${numeric(maintenanceManagement?.panels?.issues)} com apontamentos` : 'Aguardando base',
+          status: panelsAvailable ? (numeric(maintenanceManagement?.panels?.issues) > 0 ? 'warn' : 'ok') : 'pending',
+          icon: 'grid',
+        },
         {
           label: 'Completude',
           value: formatPct(measurementCompletenessPct),
@@ -356,11 +399,11 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
       trendMonthly,
       familyCapacity,
       sourceOrigins: [
-        { title: 'CSV automático', description: 'WebCTRL via CSV', value: 7, status: 'ok' },
+        { title: 'CSV automático', description: 'WebCTRL via CSV', value: 8, status: 'ok' },
         { title: 'Gestão de manutenção', description: maintenanceManagementAvailable ? 'Planilha atualizada' : 'Aguardando importação', value: maintenanceManagementAvailable ? 1 : 0, status: maintenanceManagementAvailable ? 'ok' : 'warn' },
         { title: 'Lançamento manual', description: 'Racks e preventivas', value: 2, status: 'info' },
       ],
-      totalSources: 7 + 2 + (maintenanceManagementAvailable ? 1 : 0),
+      totalSources: 8 + 2 + (maintenanceManagementAvailable ? 1 : 0),
     },
     sources,
     daily: response.daily.map((day) => ({
@@ -372,6 +415,15 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
       measurementCompletenessPct: nullableNumber(day.data_quality?.measurement_completeness_pct),
     })),
     operational: {
+      pue: {
+        status: pueAvailable ? 'AVAILABLE' : 'UNAVAILABLE',
+        value: pueValue,
+        avg: nullableNumber(pueMetric?.avg),
+        min: nullableNumber(pueMetric?.min),
+        max: nullableNumber(pueMetric?.max),
+        peakTimestamp: pueMetric?.peak_timestamp ? formatDateTimeBr(pueMetric.peak_timestamp) : pueMetric?.peak_date ? formatDateBr(pueMetric.peak_date) : null,
+        daily: (pue?.daily || []).map((item) => ({ date: formatDateBr(item.reference_date), value: numeric(item.pue) })),
+      },
       ups: [
         equipment('UPS 801', ups['ups_801_kva']),
         equipment('UPS 802', ups['ups_802_kva']),
@@ -392,23 +444,25 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
         totalMaxTr: nullableNumber(thermal['total_tr']?.max),
         peakTimestamp: thermal['total_tr']?.peak_timestamp ? formatDateTimeBr(thermal['total_tr'].peak_timestamp) : thermal['total_tr']?.peak_date ? formatDateBr(thermal['total_tr'].peak_date) : null,
         chillers: [
-          chiller('York', thermal['tr_york']),
-          chiller('Trane', thermal['tr_trane']),
-          chiller('Carrier', thermal['tr_carrier']),
+          chiller('York', thermal['tr_york'], (thermal['operation'] as Record<string, Record<string, unknown>> | undefined)?.york),
+          chiller('Trane', thermal['tr_trane'], (thermal['operation'] as Record<string, Record<string, unknown>> | undefined)?.trane),
+          chiller('Carrier', thermal['tr_carrier'], (thermal['operation'] as Record<string, Record<string, unknown>> | undefined)?.carrier),
         ],
       },
       vac: {
         status: vacAvailable ? 'AVAILABLE' : 'UNAVAILABLE',
         note: vacAvailable
-          ? `Dados VAC presentes em ${coverage['DISP_INFRA_VAC']?.days_valid || 0}/${response.period.valid_days} dias válidos do período.`
-          : 'Nenhum dado VAC válido no período selecionado.',
-        coveragePct: vacCoverage,
-        monitoredAssets: vacAssets,
+          ? `${vacAssetItems.filter((item) => item.hasData).length}/4 ativos possuem leitura válida no período.`
+          : 'Nenhum ativo VAC possui leitura completa de RFF e ALM no período selecionado.',
+        temporalCoveragePct: vacTemporalCoverage,
+        assetCoveragePct: vacAssetCoverage,
+        monitoredAssets: vacAssetItems.filter((item) => item.hasData).map((item) => item.name),
+        assets: vacAssetItems.map(({ hasData: _hasData, ...item }) => item),
       },
       disponibilidade: {
-        cag: response.operational.availability?.cag_rule === 'PENDING_VALIDATION' ? 'PENDING_RULE' : 'AVAILABLE',
+        cag: 'AVAILABLE',
         vac: vacAvailable ? 'AVAILABLE' : 'UNAVAILABLE',
-        note: 'O recebimento de telemetria é separado da regra oficial de disponibilidade. O CAG permanece pendente de homologação da regra percentual.',
+        note: 'A disponibilidade VAC usa os sinais RFF e ALM; o estado operacional do CAG é apresentado separadamente por período.',
       },
     },
     manual: {

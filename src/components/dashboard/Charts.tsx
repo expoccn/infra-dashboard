@@ -107,3 +107,23 @@ export function CapacidadeChart({ data }: { data: FamilyCapacityPoint[] }) {
     </div>
   );
 }
+
+
+export function PueChart({ data }: { data: Array<{ date: string; value: number }> }) {
+  if (!data.length) return <div className="flex h-[240px] items-center justify-center text-sm text-muted-foreground">Sem histórico de PUE para o período selecionado.</div>;
+  const values = data.map((item) => item.value).filter(Number.isFinite);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const pad = Math.max(0.02, (max - min) * 0.35);
+  return (
+    <ResponsiveContainer width="100%" height={240}>
+      <LineChart data={data} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+        <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
+        <XAxis dataKey="date" {...axis} />
+        <YAxis domain={[Math.max(0, min - pad), max + pad]} {...axis} />
+        <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: 'var(--border)' }} formatter={(value: number) => value.toFixed(2).replace('.', ',')} />
+        <Line type="monotone" dataKey="value" name="PUE" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
