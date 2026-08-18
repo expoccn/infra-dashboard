@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { usePeriod } from '@/context/PeriodContext';
 import {
   fetchHealth,
   fetchHistory,
@@ -7,13 +6,13 @@ import {
   fetchMaintenanceManagement,
   importMaintenanceWorkbook,
   fetchRacks,
-  fetchReport,
   saveMaintenance,
   saveRacks,
   fetchAdminUsers,
   createAdminUser,
   updateAdminUser,
   resetAdminUserPassword,
+  downloadReportPdf,
 } from '@/services/api';
 
 export function useHealth() {
@@ -103,15 +102,6 @@ export function useImportMaintenanceWorkbook() {
   });
 }
 
-export function useReport() {
-  const { period } = usePeriod();
-  return useQuery({
-    queryKey: ['report', period],
-    queryFn: () => fetchReport(period),
-    staleTime: 60 * 1000,
-    retry: 1,
-  });
-}
 
 
 export function useAdminUsers(enabled = true) {
@@ -153,3 +143,10 @@ export function useResetAdminUserPassword() {
     },
   });
 }
+
+export function useDownloadReportPdf() {
+  return useMutation({
+    mutationFn: downloadReportPdf,
+  });
+}
+
