@@ -80,9 +80,9 @@ export function CapacidadeChart({ data }: { data: FamilyCapacityPoint[] }) {
   if (!hasRealUtilization) {
     return (
       <div className="flex h-[245px] flex-col items-center justify-center rounded-xl bg-surface/50 px-5 text-center">
-        <p className="text-sm font-medium">Percentual de utilização não homologado</p>
+        <p className="text-sm font-medium">Sem utilização publicável</p>
         <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-          A telemetria de UPS, RPP, CAG e GMG está disponível, mas os limites nominais necessários para comparar famílias em percentual ainda não fazem parte da regra aprovada.
+          Os parâmetros estão cadastrados, mas nenhuma família possui medição válida suficiente para exibir utilização neste período.
         </p>
       </div>
     );
@@ -91,39 +91,72 @@ export function CapacidadeChart({ data }: { data: FamilyCapacityPoint[] }) {
   const sanitized = data.map((item) => ({ ...item, plotValue: item.utilization ?? 0 }));
   return (
     <div>
-      <Legend items={[{ label: 'Utilização (%)', color: 'var(--primary)' }, { label: 'Limite de referência', color: 'var(--critical)', dashed: true }]} />
+      <Legend items={[{ label: 'Maior utilização monitorada no pico (%)', color: 'var(--primary)' }, { label: 'Limite de referência', color: 'var(--critical)', dashed: true }]} />
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={sanitized} margin={{ top: 18, right: 12, left: -12, bottom: 0 }}>
           <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
           <XAxis dataKey="family" {...axis} />
-          <YAxis domain={[0, 150]} ticks={[0, 30, 60, 90, 120, 150]} {...axis} />
-          <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'var(--accent)' }} />
+          <YAxis domain={[0, 120]} ticks={[0, 30, 60, 90, 100, 120]} {...axis} />
+          <Tooltip
+            contentStyle={tooltipStyle}
+            cursor={{ fill: 'var(--accent)' }}
+            formatter={(value: number) => [`${Number(value).toFixed(1).replace('.', ',')}%`, 'Utilização no pico']}
+            labelFormatter={(label) => {
+              const item = sanitized.find((row) => row.family === label);
+              return item?.coverageLabel ? `${label} · cobertura ${item.coverageLabel}` : String(label);
+            }}
+          />
           <ReferenceLine y={100} stroke="var(--critical)" strokeDasharray="6 4" />
           <Bar dataKey="plotValue" name="Utilização" fill="var(--primary)" radius={[3, 3, 0, 0]} isAnimationActive={false}>
             <LabelList dataKey="utilization" position="top" fontSize={11} fill="var(--foreground)" formatter={(v: number | null) => (v == null ? 'N/D' : `${v.toFixed(1).replace('.', ',')}%`)} />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+      <div className="mt-2 grid gap-1 text-xs text-muted-foreground">
+        {data.map((item) => (
+          <p key={item.family}><span className="font-medium text-foreground">{item.family}</span> · cobertura {item.coverageLabel || 'N/D'}{item.note ? ` · ${item.note}` : ''}</p>
+        ))}
+      </div>
     </div>
   );
 }
 
-
-export function PueChart({ data }: { data: Array<{ date: string; value: number }> }) {
+export function PueChart({
+  data,
+  target,
+  limit,
+}: {
+  data: Array<{ date: string; value: number }>;
+  target?: number | null;
+  limit?: number | null;
+}) {
   if (!data.length) return <div className="flex h-[240px] items-center justify-center text-sm text-muted-foreground">Sem histórico de PUE para o período selecionado.</div>;
   const values = data.map((item) => item.value).filter(Number.isFinite);
+  if (target != null) values.push(target);
+  if (limit != null) values.push(limit);
   const min = Math.min(...values);
   const max = Math.max(...values);
-  const pad = Math.max(0.02, (max - min) * 0.35);
+  const pad = Math.max(0.02, (max - min) * 0.18);
   return (
-    <ResponsiveContainer width="100%" height={240}>
-      <LineChart data={data} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
-        <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-        <XAxis dataKey="date" {...axis} />
-        <YAxis domain={[Math.max(0, min - pad), max + pad]} {...axis} />
-        <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: 'var(--border)' }} formatter={(value: number) => value.toFixed(2).replace('.', ',')} />
-        <Line type="monotone" dataKey="value" name="PUE" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} />
-      </LineChart>
-    </ResponsiveContainer>
+    <div>
+      {(target != null || limit != null) ? (
+        <Legend items={[
+          ...(target != null ? [{ label: `Meta ${target.toFixed(2).replace('.', ',')}`, color: 'var(--success)', dashed: true }] : []),
+          ...(limit != null ? [{ label: `Limite ${limit.toFixed(2).replace('.', ',')}`, color: 'var(--critical)', dashed: true }] : []),
+          { label: 'PUE medido', color: 'var(--primary)' },
+        ]} />
+      ) : null}
+      <ResponsiveContainer width="100%" height={240}>
+        <LineChart data={data} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+          <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
+          <XAxis dataKey="date" {...axis} />
+          <YAxis domain={[Math.max(0, min - pad), max + pad]} {...axis} />
+          <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: 'var(--border)' }} formatter={(value: number) => value.toFixed(2).replace('.', ',')} />
+          {target != null ? <ReferenceLine y={target} stroke="var(--success)" strokeDasharray="6 4" /> : null}
+          {limit != null ? <ReferenceLine y={limit} stroke="var(--critical)" strokeDasharray="6 4" /> : null}
+          <Line type="monotone" dataKey="value" name="PUE" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
   );
 }

@@ -65,6 +65,157 @@ export interface MaintenanceManagementDashboardSummary {
   message?: string;
 }
 
+
+
+export interface CagThermalResponse {
+  tr_york?: MetricAggregate;
+  tr_trane?: MetricAggregate;
+  tr_carrier?: MetricAggregate;
+  total_tr?: MetricAggregate;
+  operation?: Record<string, Record<string, unknown>>;
+  availability_rule?: string;
+  [key: string]: unknown;
+}
+
+export interface GmgOperationalResponse {
+  gmg_1_kva?: MetricAggregate;
+  gmg_2_kva?: MetricAggregate;
+  gmg_3_kva?: MetricAggregate;
+  gmg_4_kva?: MetricAggregate;
+  kpi_capacity_rule?: string;
+  kpi_capacity_publishable?: boolean;
+  validation_note?: string | null;
+  [key: string]: unknown;
+}
+
+export interface CapacityParameterAsset {
+  id: string;
+  nominal?: number | null;
+  limit?: number | null;
+  existing?: number | null;
+  local?: string | null;
+  source_label?: string | null;
+}
+
+export interface CapacityAssetResult {
+  id: string;
+  nominal_kva?: number | null;
+  limit_kva?: number | null;
+  nominal_tr?: number | null;
+  limit_tr?: number | null;
+  source_status: 'AVAILABLE' | 'RECEIVED' | 'NO_DATA' | string;
+  avg_load: number | null;
+  max_load: number | null;
+  utilization_avg_pct: number | null;
+  utilization_peak_pct: number | null;
+  utilization_band_avg: string | null;
+  utilization_band_peak: string | null;
+  reserve_at_peak: number | null;
+  data_status: 'AVAILABLE' | 'VALIDATION_REQUIRED' | 'NO_DATA' | string;
+}
+
+export interface CapacityFamilyResult {
+  expected_count: number;
+  received_count: number;
+  missing_count: number;
+  coverage_pct: number | null;
+  missing_assets: string[];
+  assets: CapacityAssetResult[];
+  aggregate_status?: string;
+}
+
+export interface CapacityResult {
+  parameter_status: 'AVAILABLE' | 'NOT_CONFIGURED' | string;
+  parameter_competence?: string | null;
+  parameter_catalog_version?: string | null;
+  pue?: {
+    target: number | null;
+    limit: number | null;
+    status: 'TARGET_MET' | 'ABOVE_TARGET_WITHIN_LIMIT' | 'ABOVE_LIMIT' | 'NO_DATA' | string;
+    value: number | null;
+    days_with_data?: number;
+    days_target_met?: number;
+    days_above_limit?: number;
+  } | null;
+  ups?: CapacityFamilyResult | null;
+  rpp?: CapacityFamilyResult | null;
+  gmg?: CapacityFamilyResult & {
+    validation_status?: string;
+    publish_capacity_kpi?: boolean;
+    note?: string | null;
+  };
+  cag?: {
+    group_id?: string;
+    nominal_tr?: number | null;
+    limit_tr?: number | null;
+    avg_load?: number | null;
+    max_load?: number | null;
+    utilization_avg_pct?: number | null;
+    utilization_peak_pct?: number | null;
+    utilization_band_avg?: string | null;
+    utilization_band_peak?: string | null;
+    reserve_at_peak?: number | null;
+    data_status?: string;
+  } | null;
+  configured_without_valid_measurement?: Record<string, unknown> | null;
+}
+
+export interface SourceRegistryEntry {
+  mode?: string;
+  status?: string;
+  expected_count?: number;
+  received_count?: number;
+  coverage_pct?: number;
+  expected_assets?: string[] | number;
+  received_assets?: string[];
+  expected_records?: number;
+  expected_positions?: number;
+  valid_signal_assets_count?: number;
+  capacity_l?: number;
+  target_pct?: number;
+  publish_capacity_kpi?: boolean;
+  note?: string | null;
+}
+
+export interface ParameterInventoryFamily {
+  expected_count?: number;
+  total_nominal?: number;
+  total_limit?: number;
+  total_existing?: number;
+  assets?: CapacityParameterAsset[];
+  note?: string | null;
+  by_category_item?: Record<string, number>;
+}
+
+export interface DashboardConfiguration {
+  status: 'AVAILABLE' | 'NOT_CONFIGURED' | string;
+  parameter_context?: {
+    competences?: string[];
+    mixed_competences?: boolean;
+    basis?: string;
+  } | null;
+  targets?: {
+    pue?: { target?: number; limit?: number; direction?: string };
+    concession_availability?: { target_pct?: number; direction?: string };
+    diesel_capacity?: { capacity_l?: number };
+    capacity_utilization_bands?: Array<Record<string, unknown>>;
+    preventive_compliance_bands?: Array<Record<string, unknown>>;
+  } | null;
+  inventory?: {
+    gmg?: ParameterInventoryFamily;
+    transformers?: ParameterInventoryFamily;
+    ups?: ParameterInventoryFamily;
+    rpp?: ParameterInventoryFamily;
+    capacity_panels?: ParameterInventoryFamily;
+    climate?: ParameterInventoryFamily;
+    racks?: ParameterInventoryFamily;
+    fcc?: ParameterInventoryFamily;
+    infra_ti_availability?: ParameterInventoryFamily & { expected_count?: number };
+  } | null;
+  source_registry?: Record<string, SourceRegistryEntry>;
+  source_gaps?: Record<string, SourceRegistryEntry>;
+}
+
 export interface DashboardApiResponse {
   ok: boolean;
   schema_version: number;
@@ -96,12 +247,20 @@ export interface DashboardApiResponse {
     valid_source_completeness_pct: number | null;
     measurement_completeness_pct: number | null;
     source_coverage: Record<string, SourceCoverage>;
+    inventory_coverage?: {
+      ups?: { expected?: number; received?: number; coverage_pct?: number | null };
+      rpp?: { expected?: number; received?: number; coverage_pct?: number | null };
+      gmg?: { expected?: number; received?: number; coverage_pct?: number | null; validation_status?: string };
+      vac?: Record<string, unknown> | null;
+    };
   };
+  configuration?: DashboardConfiguration;
   operational: {
+    capacity?: CapacityResult | null;
     ups: Record<string, MetricAggregate> | null;
     rpp: Record<string, Record<string, MetricAggregate>> | null;
     climatization: {
-      thermal: (Record<string, MetricAggregate> & { availability_rule?: string }) | null;
+      thermal: CagThermalResponse | null;
       vac: Record<string, unknown> | null;
     };
     pue: {
@@ -114,7 +273,7 @@ export interface DashboardApiResponse {
       cag_status?: string;
       vac_rule?: string;
     };
-    gmg: (Record<string, MetricAggregate> & { kpi_capacity_rule?: string }) | null;
+    gmg: GmgOperationalResponse | null;
   };
   maintenance_management?: MaintenanceManagementDashboardSummary | null;
   manual: {
@@ -134,6 +293,7 @@ export interface DashboardApiResponse {
       valid_source_completeness_pct?: number | null;
       measurement_completeness_pct?: number | null;
     };
+    capacity?: CapacityResult | null;
   }>;
 }
 

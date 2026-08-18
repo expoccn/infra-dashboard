@@ -27,19 +27,19 @@ const valueTone: Record<UiStatus, string> = {
 };
 
 const badgeTone: Record<UiStatus, string> = {
-  ok: 'bg-success/12 text-success',
-  warn: 'bg-warning/12 text-warning',
-  crit: 'bg-critical/12 text-critical',
+  ok: 'bg-success/8 text-success',
+  warn: 'bg-warning/8 text-warning',
+  crit: 'bg-critical/8 text-critical',
   pending: 'bg-muted text-muted-foreground',
-  info: 'bg-primary/12 text-primary',
+  info: 'bg-primary/8 text-primary',
 };
 
 const iconTone: Record<UiStatus, string> = {
-  ok: 'bg-success/12 text-success',
-  warn: 'bg-warning/12 text-warning',
-  crit: 'bg-critical/12 text-critical',
+  ok: 'bg-success/8 text-success',
+  warn: 'bg-warning/8 text-warning',
+  crit: 'bg-critical/8 text-critical',
   pending: 'bg-muted text-muted-foreground',
-  info: 'bg-primary/12 text-primary',
+  info: 'bg-primary/8 text-primary',
 };
 
 export function KpiCard({

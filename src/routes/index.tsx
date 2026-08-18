@@ -30,7 +30,7 @@ export const Route = createFileRoute('/')({
 });
 
 const origemIcons = [FileCheck2, PencilLine, Timer];
-const origemTone = ['text-success bg-success/12', 'text-primary bg-primary/12', 'text-warning bg-warning/12'];
+const origemTone = ['text-success bg-success/8', 'text-primary bg-primary/8', 'text-warning bg-warning/8'];
 const origemValueTone = ['text-success', 'text-primary', 'text-warning'];
 
 function VisaoExecutiva() {
@@ -52,7 +52,7 @@ function VisaoExecutiva() {
   return (
     <AppShell
       title="Dashboard de Governança de Infraestrutura"
-      description="Resumo consolidado da referência atual, com destaque para a qualidade das fontes, capacidade instalada, climatização e pendências manuais."
+      description="Resumo consolidado da referência atual, com metas oficiais, cobertura do inventário esperado, capacidade monitorada, climatização e pendências de dados."
       data={data}
     >
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7">
@@ -71,7 +71,7 @@ function VisaoExecutiva() {
             {data.overview.criticalAssets.map((item) => (
               <li key={item} className="flex items-center gap-2 rounded-lg bg-critical/8 px-3 py-2 text-sm">
                 <AlertCircle className="h-4 w-4 shrink-0 text-critical" />
-                <span className="truncate text-foreground/90">{item}</span>
+                <span className="text-foreground/90">{item}</span>
                 <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
               </li>
             ))}
@@ -83,7 +83,7 @@ function VisaoExecutiva() {
             {data.overview.attention.map((item) => (
               <li key={item} className="flex items-center gap-2 rounded-lg bg-warning/8 px-3 py-2 text-sm">
                 <Building className="h-4 w-4 shrink-0 text-warning" />
-                <span className="truncate text-foreground/90">{item}</span>
+                <span className="text-foreground/90">{item}</span>
                 <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
               </li>
             ))}
@@ -116,7 +116,7 @@ function VisaoExecutiva() {
           <TendenciaChart data={data.overview.trendMonthly} />
         </Panel>
 
-        <Panel title="Capacidade por Família" icon={BarChart3} action={<Info className="h-4 w-4 text-muted-foreground" />}>
+        <Panel title="Maior Utilização Monitorada" icon={BarChart3} action={<Info className="h-4 w-4 text-muted-foreground" />}>
           <CapacidadeChart data={data.overview.familyCapacity} />
         </Panel>
 

@@ -44,6 +44,8 @@ export interface FamilyCapacityPoint {
   family: string;
   utilization: number | null;
   limit?: number;
+  coverageLabel?: string;
+  note?: string;
 }
 
 export interface SourceOriginItem {
@@ -67,6 +69,32 @@ export interface SourceStatusItem {
   daysInPeriod: number;
 }
 
+export interface CapacityAssetMetric {
+  id: string;
+  nominal: number | null;
+  limit: number | null;
+  avgLoad: number | null;
+  maxLoad: number | null;
+  utilizationAvgPct: number | null;
+  utilizationPeakPct: number | null;
+  utilizationBandAvg: string | null;
+  utilizationBandPeak: string | null;
+  reserveAtPeak: number | null;
+  sourceStatus: string;
+  dataStatus: string;
+  status: DataAvailability;
+}
+
+export interface CapacityFamilyMetric {
+  expectedCount: number;
+  receivedCount: number;
+  missingCount: number;
+  coveragePct: number | null;
+  missingAssets: string[];
+  aggregateStatus: string;
+  assets: CapacityAssetMetric[];
+}
+
 export interface EquipmentMetric {
   name: string;
   avg: number | null;
@@ -75,6 +103,14 @@ export interface EquipmentMetric {
   peakTimestamp?: string | null;
   status: DataAvailability;
   note?: string;
+  nominal?: number | null;
+  limit?: number | null;
+  utilizationAvgPct?: number | null;
+  utilizationPeakPct?: number | null;
+  reserveAtPeak?: number | null;
+  utilizationBandPeak?: string | null;
+  sourceStatus?: string;
+  dataStatus?: string;
 }
 
 export interface RppMetric {
@@ -86,6 +122,13 @@ export interface RppMetric {
   avgCurrentS: number | null;
   avgCurrentT: number | null;
   status: DataAvailability;
+  nominal?: number | null;
+  limit?: number | null;
+  utilizationAvgPct?: number | null;
+  utilizationPeakPct?: number | null;
+  reserveAtPeak?: number | null;
+  utilizationBandPeak?: string | null;
+  sourceStatus?: string;
 }
 
 export interface ChillerMetric {
@@ -94,6 +137,21 @@ export interface ChillerMetric {
   maxTr: number | null;
   operationalState: 'OPERATED' | 'DID_NOT_OPERATE' | 'NO_DATA';
   operatingHours: number | null;
+}
+
+export interface SourceGapUi {
+  key: string;
+  label: string;
+  status: string;
+  mode: string;
+  expected: string | null;
+  received: string | null;
+  note: string | null;
+}
+
+export interface RackParameterLocation {
+  location: string;
+  existing: number;
 }
 
 export interface ManualModule<T = unknown> {
@@ -126,6 +184,27 @@ export interface DashboardPayload {
     measurementCompletenessPct: number;
     status: string;
   };
+  configuration: {
+    status: string;
+    parameterCompetence: string | null;
+    pueTarget: number | null;
+    pueLimit: number | null;
+    concessionTargetPct: number | null;
+    dieselCapacityL: number | null;
+    racks: {
+      expectedCount: number;
+      totalExisting: number;
+      locations: RackParameterLocation[];
+    } | null;
+    sourceGaps: SourceGapUi[];
+    configuredInventory: {
+      transformers: { expectedCount: number; totalNominal: number | null; totalLimit: number | null } | null;
+      fcc: { expectedCount: number; totalNominal: number | null; totalLimit: number | null } | null;
+      capacityPanels: { expectedCount: number; totalNominal: number | null; totalLimit: number | null } | null;
+      climate: { expectedCount: number; totalNominal: number | null; totalLimit: number | null; assets: Array<{ id: string; nominal: number | null; limit: number | null }> } | null;
+      infraTiAvailability: { expectedCount: number } | null;
+    };
+  };
   overview: {
     kpis: OverviewKpi[];
     executiveSummary: string;
@@ -147,6 +226,24 @@ export interface DashboardPayload {
     measurementCompletenessPct: number | null;
   }>;
   operational: {
+    capacity: {
+      status: string;
+      ups: CapacityFamilyMetric | null;
+      rpp: CapacityFamilyMetric | null;
+      gmg: (CapacityFamilyMetric & { validationStatus: string; publishCapacityKpi: boolean; note: string | null }) | null;
+      cag: {
+        groupId: string;
+        nominalTr: number | null;
+        limitTr: number | null;
+        avgLoadTr: number | null;
+        maxLoadTr: number | null;
+        utilizationAvgPct: number | null;
+        utilizationPeakPct: number | null;
+        reserveAtPeakTr: number | null;
+        utilizationBandPeak: string | null;
+        dataStatus: string;
+      } | null;
+    };
     ups: EquipmentMetric[];
     gmg: EquipmentMetric[];
     rpp: RppMetric[];
@@ -164,12 +261,19 @@ export interface DashboardPayload {
       max: number | null;
       peakTimestamp: string | null;
       daily: Array<{ date: string; value: number }>;
+      target: number | null;
+      limit: number | null;
+      targetStatus: string;
+      daysWithData: number;
+      daysTargetMet: number;
+      daysAboveLimit: number;
     };
     vac: {
       status: DataAvailability;
       note: string;
       temporalCoveragePct: number;
       assetCoveragePct: number;
+      expectedAssets: number;
       monitoredAssets: string[];
       assets: Array<{
         name: string;

@@ -67,7 +67,7 @@ export function Header({
 
         <span className={cn(
           'rounded-lg px-3 py-1.5 text-sm font-medium',
-          data.header.stale ? 'bg-warning/15 text-warning' : 'bg-success/15 text-success',
+          data.header.stale ? 'bg-warning/8 text-warning' : 'bg-success/8 text-success',
         )}>
           {baseLabel}
         </span>
@@ -112,7 +112,7 @@ export function Header({
             className={cn(
               'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
               period === item
-                ? 'border-primary bg-primary/15 text-primary'
+                ? 'border-primary bg-primary/8 text-primary'
                 : 'border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground',
             )}
           >
@@ -120,7 +120,7 @@ export function Header({
           </button>
         ))}
         {data.period.partialHistory ? (
-          <span className="ml-2 rounded-md bg-warning/12 px-2.5 py-1 text-xs font-medium text-warning">
+          <span className="ml-2 rounded-md bg-warning/8 px-2.5 py-1 text-xs font-medium text-warning">
             Histórico parcial
           </span>
         ) : null}

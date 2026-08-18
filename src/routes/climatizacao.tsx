@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Snowflake, ThermometerSun } from 'lucide-react';
+import { Building2, Snowflake, ThermometerSun } from 'lucide-react';
 import { AppShell } from '@/components/dashboard/AppShell';
 import { PageState } from '@/components/dashboard/PageState';
 import { Panel } from '@/components/dashboard/Panel';
@@ -28,26 +28,43 @@ function vacLabel(status: string, coverage: number) {
   return 'Sem leitura';
 }
 
+function pct(value: number | null | undefined) {
+  return value == null ? 'Não disponível' : `${value.toFixed(2).replace('.', ',')}%`;
+}
+
 function ClimatizacaoPage() {
   const dashboardQuery = useDashboard();
   if (dashboardQuery.isPending) return <PageState loading title="Carregando dados" description="Consultando os dados do dashboard..." />;
   if (dashboardQuery.isError || !dashboardQuery.data) return <PageState title="Dados indisponíveis" description={dashboardQuery.error instanceof Error ? dashboardQuery.error.message : 'Não foi possível carregar os dados.'} onRetry={() => void dashboardQuery.refetch()} />;
   const data = dashboardQuery.data;
+  const cagCapacity = data.operational.capacity.cag;
+  const climateInventory = data.configuration.configuredInventory.climate;
+  const otherClimateGroups = climateInventory?.assets.filter((item) => item.id.toUpperCase() !== 'CHILER') || [];
 
   return (
-    <AppShell title="Climatização" description="Carga térmica e comportamento operacional do CAG, com disponibilidade dos equipamentos VAC calculada pelos sinais recebidos." data={data}>
-      <div className="grid gap-4 md:grid-cols-3">
+    <AppShell
+      title="Climatização"
+      description="Carga térmica e comportamento operacional do CAG, comparados ao limite oficial do grupo CHILER, além da disponibilidade do escopo VAC atualmente recebido."
+      data={data}
+    >
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-2xl border border-border bg-card px-4 py-4"><p className="text-sm text-muted-foreground">Carga térmica média total</p><p className="mt-2 text-3xl font-semibold text-primary">{formatCompactNumber(data.operational.climatization.totalAvgTr, ' TR')}</p></div>
-        <div className="rounded-2xl border border-border bg-card px-4 py-4"><p className="text-sm text-muted-foreground">Carga térmica máxima total</p><p className="mt-2 text-3xl font-semibold text-success">{formatCompactNumber(data.operational.climatization.totalMaxTr, ' TR')}</p></div>
-        <div className="rounded-2xl border border-border bg-card px-4 py-4"><p className="text-sm text-muted-foreground">Pico registrado</p><p className="mt-2 text-xl font-semibold">{data.operational.climatization.peakTimestamp || 'Não disponível'}</p></div>
+        <div className="rounded-2xl border border-border bg-card px-4 py-4"><p className="text-sm text-muted-foreground">Carga térmica máxima total</p><p className="mt-2 text-3xl font-semibold">{formatCompactNumber(data.operational.climatization.totalMaxTr, ' TR')}</p></div>
+        <div className="rounded-2xl border border-border bg-card px-4 py-4"><p className="text-sm text-muted-foreground">Utilização no pico</p><p className="mt-2 text-3xl font-semibold text-primary">{pct(cagCapacity?.utilizationPeakPct)}</p><p className="mt-1 text-xs text-muted-foreground">Limite {formatCompactNumber(cagCapacity?.limitTr, ' TR')}</p></div>
+        <div className="rounded-2xl border border-border bg-card px-4 py-4"><p className="text-sm text-muted-foreground">Reserva no pico</p><p className="mt-2 text-3xl font-semibold text-success">{formatCompactNumber(cagCapacity?.reserveAtPeakTr, ' TR')}</p><p className="mt-1 text-xs text-muted-foreground">Pico em {data.operational.climatization.peakTimestamp || 'Não disponível'}</p></div>
       </div>
 
       <Panel title="CAG por Chiller" icon={Snowflake}>
+        <div className="mb-4 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl bg-surface px-4 py-3"><p className="text-xs text-muted-foreground">Capacidade nominal do grupo</p><p className="mt-1 text-lg font-semibold">{formatCompactNumber(cagCapacity?.nominalTr, ' TR')}</p></div>
+          <div className="rounded-xl bg-surface px-4 py-3"><p className="text-xs text-muted-foreground">Limite oficial do grupo</p><p className="mt-1 text-lg font-semibold">{formatCompactNumber(cagCapacity?.limitTr, ' TR')}</p></div>
+          <div className="rounded-xl bg-surface px-4 py-3"><p className="text-xs text-muted-foreground">Utilização média</p><p className="mt-1 text-lg font-semibold text-primary">{pct(cagCapacity?.utilizationAvgPct)}</p></div>
+        </div>
         <div className="grid gap-3 xl:grid-cols-3">
           {data.operational.climatization.chillers.map((item) => (
             <div key={item.name} className="rounded-xl bg-surface px-4 py-4">
               <p className="text-base font-semibold">{item.name}</p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 text-sm">
+              <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                 <div><p className="text-muted-foreground">Estado Operacional</p><p className="font-semibold">{operationalLabel(item.operationalState)}</p></div>
                 <div><p className="text-muted-foreground">Horas em Operação</p><p className="font-semibold">{item.operatingHours == null ? 'Não disponível' : `${item.operatingHours.toFixed(2).replace('.', ',')} h`}</p></div>
                 <div><p className="text-muted-foreground">Carga Térmica Média</p><p className="font-semibold">{formatCompactNumber(item.avgTr, ' TR')}</p></div>
@@ -58,12 +75,30 @@ function ClimatizacaoPage() {
         </div>
       </Panel>
 
+      <Panel title="Demais grupos de climatização cadastrados" icon={Building2}>
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <StatusBadge label="Sem fonte de carga válida" tone="pending" />
+          <p className="text-sm text-muted-foreground">O CSV atual de CAG cobre somente o grupo CHILER. Os demais grupos permanecem cadastrados apenas como parâmetro esperado.</p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {otherClimateGroups.map((item) => (
+            <div key={item.id} className="rounded-xl bg-surface px-4 py-3">
+              <div className="flex items-center justify-between gap-2"><p className="font-medium">{item.id}</p><StatusBadge label="Sem dados" tone="pending" /></div>
+              <p className="mt-2 text-sm text-muted-foreground">Nominal: {formatCompactNumber(item.nominal, ' TR')} · Limite: {formatCompactNumber(item.limit, ' TR')}</p>
+            </div>
+          ))}
+        </div>
+      </Panel>
+
       <Panel title="VAC" icon={ThermometerSun}>
+        <div className="mb-4 rounded-xl bg-primary/8 px-4 py-3 text-sm text-muted-foreground">
+          Este bloco representa somente os ativos presentes no CSV VAC atual; ele não representa o inventário completo de disponibilidade INFRA × TI do site.
+        </div>
         <div className="grid gap-3 md:grid-cols-4">
           <div className="rounded-xl bg-surface px-4 py-3"><p className="text-sm text-muted-foreground">Cobertura temporal</p><p className="mt-1 text-xl font-semibold">{data.operational.vac.temporalCoveragePct.toFixed(2).replace('.', ',')}%</p></div>
           <div className="rounded-xl bg-surface px-4 py-3"><p className="text-sm text-muted-foreground">Cobertura dos ativos</p><p className="mt-1 text-xl font-semibold">{data.operational.vac.assetCoveragePct.toFixed(2).replace('.', ',')}%</p></div>
-          <div className="rounded-xl bg-surface px-4 py-3"><p className="text-sm text-muted-foreground">Ativos com leitura</p><p className="mt-1 text-xl font-semibold">{data.operational.vac.monitoredAssets.length} / 4</p></div>
-          <div className="rounded-xl bg-surface px-4 py-3"><p className="text-sm text-muted-foreground">Ativos sem leitura</p><p className="mt-1 text-xl font-semibold">{4 - data.operational.vac.monitoredAssets.length}</p></div>
+          <div className="rounded-xl bg-surface px-4 py-3"><p className="text-sm text-muted-foreground">Ativos com leitura</p><p className="mt-1 text-xl font-semibold">{data.operational.vac.monitoredAssets.length} / {data.operational.vac.expectedAssets}</p></div>
+          <div className="rounded-xl bg-surface px-4 py-3"><p className="text-sm text-muted-foreground">Ativos sem leitura</p><p className="mt-1 text-xl font-semibold">{Math.max(0, data.operational.vac.expectedAssets - data.operational.vac.monitoredAssets.length)}</p></div>
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {data.operational.vac.assets.map((item) => (

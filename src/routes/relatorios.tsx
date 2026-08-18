@@ -76,7 +76,7 @@ function RelatoriosPage() {
                 label={'status' in reportQuery.data.report.sections.maintenance ? 'Manutenção pendente' : 'Manutenção disponível'}
                 tone={'status' in reportQuery.data.report.sections.maintenance ? 'pending' : 'ok'}
               />
-              <p className="text-sm leading-relaxed text-muted-foreground">A exportação PDF permanece como etapa posterior; esta tela já apresenta a estrutura consolidada do relatório executivo.</p>
+              <p className="text-sm leading-relaxed text-muted-foreground">A geração dos PDFs será conectada nesta tela após a atualização do modelo de relatório com os parâmetros oficiais desta versão.</p>
             </div>
           </Panel>
         </div>

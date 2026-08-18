@@ -1,11 +1,11 @@
 import { cn } from '@/lib/utils';
 
 const toneMap = {
-  ok: 'bg-success/15 text-success',
-  warn: 'bg-warning/15 text-warning',
-  crit: 'bg-critical/15 text-critical',
+  ok: 'bg-success/8 text-success',
+  warn: 'bg-warning/8 text-warning',
+  crit: 'bg-critical/8 text-critical',
   pending: 'bg-muted text-muted-foreground',
-  info: 'bg-primary/15 text-primary',
+  info: 'bg-primary/8 text-primary',
 } as const;
 
 export function StatusBadge({
