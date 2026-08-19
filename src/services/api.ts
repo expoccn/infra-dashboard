@@ -22,21 +22,48 @@ export const DATA_API_BASE_URL = (
 ).replace(/\/$/, '');
 
 
-export type ReportPdfType = 'daily' | 'weekly' | 'monthly';
+export type ReportType = 'daily' | 'weekly' | 'monthly';
+export type ReportFormat = 'pdf' | 'pptx';
 
-const REPORT_PDF_PATHS: Record<ReportPdfType, string> = {
-  daily: '/report-daily-pdf',
-  weekly: '/report-weekly-pdf',
-  monthly: '/report-monthly-pdf',
+export type ReportDownloadRequest = {
+  type: ReportType;
+  format: ReportFormat;
 };
 
-const REPORT_PDF_FALLBACK_NAMES: Record<ReportPdfType, string> = {
-  daily: 'CLARO_DC-RJO-AM_Relatorio_Diario.pdf',
-  weekly: 'CLARO_DC-RJO-AM_Relatorio_Semanal.pdf',
-  monthly: 'CLARO_DC-RJO-AM_Relatorio_Mensal.pdf',
+const REPORT_PATHS: Record<ReportType, Partial<Record<ReportFormat, string>>> = {
+  daily: {
+    pdf: '/report-daily-pdf',
+  },
+  weekly: {
+    pdf: '/report-weekly-pdf',
+  },
+  monthly: {
+    pdf: '/report-monthly-pdf',
+    pptx: '/report-monthly-pptx',
+  },
 };
 
-function reportFilenameFromHeaders(response: Response, type: ReportPdfType) {
+const REPORT_FALLBACK_NAMES: Record<ReportType, Record<ReportFormat, string>> = {
+  daily: {
+    pdf: 'CLARO_DC-RJO-AM_Relatorio_Diario.pdf',
+    pptx: 'CLARO_DC-RJO-AM_Relatorio_Diario.pptx',
+  },
+  weekly: {
+    pdf: 'CLARO_DC-RJO-AM_Relatorio_Semanal.pdf',
+    pptx: 'CLARO_DC-RJO-AM_Relatorio_Semanal.pptx',
+  },
+  monthly: {
+    pdf: 'CLARO_DC-RJO-AM_Relatorio_Mensal.pdf',
+    pptx: 'CLARO_DC-RJO-AM_Relatorio_Executivo_Mensal.pptx',
+  },
+};
+
+const REPORT_MIME_TYPES: Record<ReportFormat, string> = {
+  pdf: 'application/pdf',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+};
+
+function reportFilenameFromHeaders(response: Response, request: ReportDownloadRequest) {
   const disposition = response.headers.get('content-disposition') || '';
   const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
   if (utf8Match?.[1]) {
@@ -53,7 +80,7 @@ function reportFilenameFromHeaders(response: Response, type: ReportPdfType) {
   const plainMatch = disposition.match(/filename=([^;]+)/i);
   if (plainMatch?.[1]) return plainMatch[1].trim().replace(/^['"]|['"]$/g, '').replace(/[\/\\]/g, '-');
 
-  return REPORT_PDF_FALLBACK_NAMES[type];
+  return REPORT_FALLBACK_NAMES[request.type][request.format];
 }
 
 async function reportErrorMessage(response: Response) {
@@ -73,27 +100,33 @@ async function reportErrorMessage(response: Response) {
 }
 
 /**
- * Gera o PDF sob demanda e dispara o download imediatamente.
+ * Gera o relatório sob demanda e dispara o download imediatamente.
  * O arquivo não entra no React Query, localStorage, sessionStorage, IndexedDB
  * nem em qualquer cache da aplicação. O Blob existe apenas durante o disparo
  * nativo do download e o Object URL é revogado logo em seguida.
  */
-export async function downloadReportPdf(type: ReportPdfType): Promise<void> {
+export async function downloadReport(request: ReportDownloadRequest): Promise<void> {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     throw new ApiError('O download do relatório está disponível somente no navegador.', 0, 'BROWSER_REQUIRED');
+  }
+
+  const path = REPORT_PATHS[request.type][request.format];
+  if (!path) {
+    throw new ApiError('Este formato de relatório ainda não está disponível.', 0, 'REPORT_FORMAT_NOT_AVAILABLE');
   }
 
   const controller = new AbortController();
   const timeout = globalThis.setTimeout(() => controller.abort(), 180000);
   const token = getAccessToken();
+  const expectedMime = REPORT_MIME_TYPES[request.format];
 
   try {
-    const response = await fetch(`${DATA_API_BASE_URL}${REPORT_PDF_PATHS[type]}`, {
+    const response = await fetch(`${DATA_API_BASE_URL}${path}`, {
       method: 'GET',
       cache: 'no-store',
       signal: controller.signal,
       headers: {
-        Accept: 'application/pdf',
+        Accept: expectedMime,
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
@@ -104,16 +137,25 @@ export async function downloadReportPdf(type: ReportPdfType): Promise<void> {
     }
 
     const contentType = (response.headers.get('content-type') || '').toLowerCase();
-    if (!contentType.includes('application/pdf')) {
-      throw new ApiError('A geração do relatório não retornou um arquivo PDF válido.', response.status, 'INVALID_PDF_RESPONSE');
+    if (!contentType.includes(expectedMime.toLowerCase())) {
+      const label = request.format === 'pdf' ? 'PDF' : 'PowerPoint';
+      throw new ApiError(
+        `A geração do relatório não retornou um arquivo ${label} válido.`,
+        response.status,
+        request.format === 'pdf' ? 'INVALID_PDF_RESPONSE' : 'INVALID_PPTX_RESPONSE',
+      );
     }
 
     const blob = await response.blob();
     if (!blob.size) {
-      throw new ApiError('O relatório foi gerado sem conteúdo.', response.status, 'EMPTY_PDF');
+      throw new ApiError(
+        'O relatório foi gerado sem conteúdo.',
+        response.status,
+        request.format === 'pdf' ? 'EMPTY_PDF' : 'EMPTY_PPTX',
+      );
     }
 
-    const filename = reportFilenameFromHeaders(response, type);
+    const filename = reportFilenameFromHeaders(response, request);
     const objectUrl = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = objectUrl;
@@ -134,6 +176,7 @@ export async function downloadReportPdf(type: ReportPdfType): Promise<void> {
     globalThis.clearTimeout(timeout);
   }
 }
+
 
 function safeServiceMessage(message: string | undefined, status: number) {
   const fallback = status === 503

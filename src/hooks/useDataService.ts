@@ -12,7 +12,7 @@ import {
   createAdminUser,
   updateAdminUser,
   resetAdminUserPassword,
-  downloadReportPdf,
+  downloadReport,
 } from '@/services/api';
 
 export function useHealth() {
@@ -144,9 +144,9 @@ export function useResetAdminUserPassword() {
   });
 }
 
-export function useDownloadReportPdf() {
+export function useDownloadReport() {
   return useMutation({
-    mutationFn: downloadReportPdf,
+    mutationFn: downloadReport,
   });
 }
 

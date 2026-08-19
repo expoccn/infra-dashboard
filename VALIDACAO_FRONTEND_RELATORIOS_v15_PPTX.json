@@ -1,0 +1,18 @@
+{
+  "version": "v15",
+  "date": "2026-08-19",
+  "status": "approved_for_integrated_homologation",
+  "typescript_transpile": {"files": 98, "errors": 0},
+  "internal_imports": {"checked": 210, "missing": 0},
+  "download_harness": {"checks": 10, "failures": 0},
+  "endpoints": {
+    "daily_pdf": "/report-daily-pdf",
+    "weekly_pdf": "/report-weekly-pdf",
+    "monthly_pdf": "/report-monthly-pdf",
+    "monthly_pptx": "/report-monthly-pptx"
+  },
+  "pptx_mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "cache": "no-store",
+  "auth": "Bearer session token",
+  "pptx_ui_scope": "monthly_only"
+}

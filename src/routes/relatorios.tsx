@@ -6,18 +6,19 @@ import { Panel } from '@/components/dashboard/Panel';
 import { StatusBadge } from '@/components/dashboard/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { useDashboard } from '@/hooks/useDashboard';
-import { useDownloadReportPdf } from '@/hooks/useDataService';
-import type { ReportPdfType } from '@/services/api';
+import { useDownloadReport } from '@/hooks/useDataService';
+import type { ReportDownloadRequest, ReportType } from '@/services/api';
 
 export const Route = createFileRoute('/relatorios')({ component: RelatoriosPage });
 
 type ReportOption = {
-  type: ReportPdfType;
+  type: ReportType;
   title: string;
   period: string;
   description: string;
   contents: string;
   icon: typeof FileText;
+  powerPoint?: boolean;
 };
 
 const REPORT_OPTIONS: ReportOption[] = [
@@ -44,12 +45,17 @@ const REPORT_OPTIONS: ReportOption[] = [
     description: 'Versão mais completa do relatório, com detalhamento operacional e gerencial da competência disponível.',
     contents: 'Indicadores, tendências, inventário esperado × recebido, manutenção detalhada, quadros, integrações e lacunas de dados.',
     icon: FileText,
+    powerPoint: true,
   },
 ];
 
+function sameDownload(a: ReportDownloadRequest | undefined, b: ReportDownloadRequest) {
+  return a?.type === b.type && a.format === b.format;
+}
+
 function RelatoriosPage() {
   const dashboardQuery = useDashboard();
-  const downloadMutation = useDownloadReportPdf();
+  const downloadMutation = useDownloadReport();
 
   if (dashboardQuery.isPending) {
     return <PageState loading title="Carregando dados" description="Consultando os dados do dashboard..." />;
@@ -65,12 +71,12 @@ function RelatoriosPage() {
   }
 
   const data = dashboardQuery.data;
-  const activeType = downloadMutation.isPending ? downloadMutation.variables : null;
-  const failedType = downloadMutation.isError ? downloadMutation.variables : null;
+  const activeDownload = downloadMutation.isPending ? downloadMutation.variables : undefined;
+  const failedDownload = downloadMutation.isError ? downloadMutation.variables : undefined;
 
-  async function handleDownload(type: ReportPdfType) {
+  async function handleDownload(request: ReportDownloadRequest) {
     try {
-      await downloadMutation.mutateAsync(type);
+      await downloadMutation.mutateAsync(request);
     } catch {
       // O erro fica disponível no mutation e é exibido no respectivo card.
     }
@@ -87,11 +93,14 @@ function RelatoriosPage() {
           <div className="grid gap-4 lg:grid-cols-3">
             {REPORT_OPTIONS.map((report) => {
               const Icon = report.icon;
-              const loading = activeType === report.type;
-              const failed = failedType === report.type;
+              const pdfRequest: ReportDownloadRequest = { type: report.type, format: 'pdf' };
+              const pptxRequest: ReportDownloadRequest = { type: report.type, format: 'pptx' };
+              const pdfLoading = downloadMutation.isPending && sameDownload(activeDownload, pdfRequest);
+              const pptxLoading = downloadMutation.isPending && sameDownload(activeDownload, pptxRequest);
+              const failed = failedDownload?.type === report.type;
 
               return (
-                <article key={report.type} className="flex min-h-[330px] flex-col rounded-2xl border border-border bg-surface p-5">
+                <article key={report.type} className="flex min-h-[350px] flex-col rounded-2xl border border-border bg-surface p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                       <Icon className="h-5 w-5" aria-hidden="true" />
@@ -109,20 +118,37 @@ function RelatoriosPage() {
                     {report.contents}
                   </div>
 
-                  <div className="mt-auto pt-5">
+                  <div className="mt-auto space-y-2 pt-5">
                     <Button
                       type="button"
                       className="w-full"
                       disabled={downloadMutation.isPending}
-                      onClick={() => void handleDownload(report.type)}
+                      onClick={() => void handleDownload(pdfRequest)}
                     >
-                      {loading ? (
+                      {pdfLoading ? (
                         <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
                       ) : (
                         <Download className="h-4 w-4" aria-hidden="true" />
                       )}
-                      {loading ? 'Gerando relatório...' : 'Baixar PDF'}
+                      {pdfLoading ? 'Gerando PDF...' : 'Baixar PDF'}
                     </Button>
+
+                    {report.powerPoint && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
+                        disabled={downloadMutation.isPending}
+                        onClick={() => void handleDownload(pptxRequest)}
+                      >
+                        {pptxLoading ? (
+                          <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <FileText className="h-4 w-4" aria-hidden="true" />
+                        )}
+                        {pptxLoading ? 'Gerando PowerPoint...' : 'Baixar PowerPoint'}
+                      </Button>
+                    )}
 
                     {failed && (
                       <p role="alert" className="mt-3 text-xs leading-relaxed text-critical">
@@ -143,14 +169,21 @@ function RelatoriosPage() {
             <div className="rounded-xl bg-surface px-4 py-3">
               <p className="font-medium text-foreground">Geração imediata</p>
               <p className="mt-1.5 leading-relaxed text-muted-foreground">
-                Ao clicar em baixar, o relatório é montado com os dados mais recentes disponíveis e o download começa assim que o PDF estiver pronto.
+                Ao clicar em baixar, o relatório é montado com os dados mais recentes disponíveis e o download começa assim que o arquivo estiver pronto.
+              </p>
+            </div>
+
+            <div className="rounded-xl bg-surface px-4 py-3">
+              <p className="font-medium text-foreground">PDF e PowerPoint</p>
+              <p className="mt-1.5 leading-relaxed text-muted-foreground">
+                Os relatórios diário e semanal estão disponíveis em PDF. O relatório mensal também pode ser gerado em PowerPoint para apresentação.
               </p>
             </div>
 
             <div className="rounded-xl bg-surface px-4 py-3">
               <p className="font-medium text-foreground">Sem arquivo armazenado</p>
               <p className="mt-1.5 leading-relaxed text-muted-foreground">
-                O portal não mantém histórico nem cópia do PDF gerado. Para obter uma versão atualizada, basta gerar novamente.
+                O portal não mantém histórico nem cópia dos arquivos gerados. Para obter uma versão atualizada, basta gerar novamente.
               </p>
             </div>
 
