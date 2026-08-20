@@ -131,3 +131,23 @@
     background-color: color-mix(in oklch, var(--color-primary) 25%, transparent);
   }
 }
+
+@layer utilities {
+  .dashboard-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--color-muted-foreground) 42%, transparent) transparent;
+  }
+
+  .dashboard-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .dashboard-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .dashboard-scrollbar::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: color-mix(in oklch, var(--color-muted-foreground) 42%, transparent);
+  }
+}

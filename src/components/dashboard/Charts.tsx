@@ -11,7 +11,7 @@ import {
   YAxis,
   LabelList,
 } from 'recharts';
-import type { FamilyCapacityPoint, MonthlyTrendPoint } from '@/types/dashboard';
+import type { FamilyCapacityPoint, MonthlyTrendPoint, UtilizationTrendPoint } from '@/types/dashboard';
 
 const axis = {
   stroke: 'var(--muted-foreground)',
@@ -69,6 +69,48 @@ export function TendenciaChart({ data }: { data: MonthlyTrendPoint[] }) {
           <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: 'var(--border)' }} />
           <Line type="monotone" dataKey="disponibilidade" name="Cobertura das fontes" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
           <Line type="monotone" dataKey="capacidade" name="Completude das medições" stroke="var(--success)" strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+
+export function PeakUtilizationTrendChart({ data }: { data: UtilizationTrendPoint[] }) {
+  if (!data.length || !data.some((item) => item.utilization !== null && item.utilization !== undefined)) {
+    return <div className="flex h-[220px] items-center justify-center text-sm text-muted-foreground">Sem histórico de utilização publicável no período.</div>;
+  }
+
+  return (
+    <div>
+      <Legend items={[
+        { label: 'Maior utilização monitorada no pico (%)', color: 'var(--primary)' },
+        { label: 'Limite de referência (%)', color: 'var(--critical)', dashed: true },
+      ]} />
+      <ResponsiveContainer width="100%" height={220}>
+        <LineChart data={data} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+          <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
+          <XAxis dataKey="date" {...axis} />
+          <YAxis domain={[0, 120]} ticks={[0, 40, 80, 120]} {...axis} />
+          <Tooltip
+            contentStyle={tooltipStyle}
+            cursor={{ stroke: 'var(--border)' }}
+            formatter={(value: number | null, name: string) => [
+              value == null ? 'Não disponível' : `${Number(value).toFixed(1).replace('.', ',')}%`,
+              name === 'utilization' ? 'Maior utilização no pico' : 'Limite',
+            ]}
+          />
+          <ReferenceLine y={100} stroke="var(--critical)" strokeDasharray="6 4" />
+          <Line
+            type="monotone"
+            dataKey="utilization"
+            name="utilization"
+            stroke="var(--primary)"
+            strokeWidth={2}
+            dot={{ r: 3 }}
+            connectNulls
+            isAnimationActive={false}
+          />
         </LineChart>
       </ResponsiveContainer>
     </div>

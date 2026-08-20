@@ -1,4 +1,4 @@
-import { CloudUpload, FileSpreadsheet } from 'lucide-react';
+import { CalendarDays, CloudUpload, FileSpreadsheet } from 'lucide-react';
 import { periodLabels, usePeriod } from '@/context/PeriodContext';
 import type { DashboardPayload } from '@/types/dashboard';
 import type { PeriodType } from '@/types/api';
@@ -6,6 +6,30 @@ import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/dashboard/ThemeToggle';
 
 const periods: PeriodType[] = ['d1', '7d', '30d'];
+
+function PeriodButtons({ compact = false }: { compact?: boolean }) {
+  const { period, setPeriod } = usePeriod();
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="mr-1 text-xs text-muted-foreground">Período:</span>
+      {periods.map((item) => (
+        <button
+          key={item}
+          type="button"
+          onClick={() => setPeriod(item)}
+          className={cn(
+            compact ? 'rounded-lg border px-2.5 py-1 text-[0.72rem] font-semibold transition-colors' : 'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
+            period === item
+              ? 'border-primary bg-primary/8 text-primary'
+              : 'border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground',
+          )}
+        >
+          {periodLabels[item]}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function Header({
   data,
@@ -16,10 +40,8 @@ export function Header({
   data: DashboardPayload;
   title: string;
   description?: string;
-  mode?: 'operational' | 'maintenance';
+  mode?: 'operational' | 'maintenance' | 'overview';
 }) {
-  const { period, setPeriod } = usePeriod();
-
   if (mode === 'maintenance') {
     return (
       <header className="border-b border-border pb-5">
@@ -42,6 +64,45 @@ export function Header({
             </div>
           </div>
           <div className="lg:hidden"><ThemeToggle /></div>
+        </div>
+      </header>
+    );
+  }
+
+  if (mode === 'overview') {
+    const refLabel = data.header.stale
+      ? `${data.header.referenceDate} (D-${data.header.daysLag})`
+      : `${data.header.referenceDate} (D-1)`;
+
+    return (
+      <header className="border-b border-border pb-4">
+        <div className="flex flex-wrap items-start gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-semibold tracking-tight xl:text-[1.85rem]">{title}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Governança de Infraestrutura <span className="font-medium text-foreground/80">{data.header.site}</span>
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5 shadow-sm">
+            <CalendarDays className="h-4.5 w-4.5 text-muted-foreground" />
+            <div className="text-xs">
+              <p className="text-muted-foreground">Referência dos dados</p>
+              <p className={cn('mt-0.5 font-semibold', data.header.stale ? 'text-primary' : 'text-success')}>{refLabel}</p>
+            </div>
+          </div>
+          <div className="lg:hidden"><ThemeToggle /></div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+          <PeriodButtons compact />
+          {data.period.partialHistory ? (
+            <span className="rounded-md bg-warning/8 px-2.5 py-1 text-[0.72rem] font-semibold text-warning">Histórico parcial</span>
+          ) : null}
+          <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
+            <CloudUpload className="h-3.5 w-3.5" />
+            Atualizado {data.header.generatedAt}
+          </span>
         </div>
       </header>
     );
@@ -103,27 +164,7 @@ export function Header({
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-xs text-muted-foreground">Período:</span>
-        {periods.map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => setPeriod(item)}
-            className={cn(
-              'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
-              period === item
-                ? 'border-primary bg-primary/8 text-primary'
-                : 'border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground',
-            )}
-          >
-            {periodLabels[item]}
-          </button>
-        ))}
-        {data.period.partialHistory ? (
-          <span className="ml-2 rounded-md bg-warning/8 px-2.5 py-1 text-xs font-medium text-warning">
-            Histórico parcial
-          </span>
-        ) : null}
+        <PeriodButtons />
         <span className="ml-auto text-xs text-muted-foreground">
           D-1 cronológico: {data.header.expectedD1}
           {data.header.stale ? ` · defasagem ${data.header.daysLag} dias` : ''}

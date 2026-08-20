@@ -1,6 +1,7 @@
 import type {
   CapacityAssetResult,
   CapacityFamilyResult,
+  CapacityResult,
   DashboardApiResponse,
   MetricAggregate,
   ParameterInventoryFamily,
@@ -271,6 +272,27 @@ function maxPeak(family: CapacityFamilyMetric | null) {
   return values.length ? Math.max(...values) : null;
 }
 
+
+function maxPeakFromCapacity(capacity?: CapacityResult | null) {
+  if (!capacity) return null;
+  const values: number[] = [];
+  for (const family of [capacity.ups, capacity.rpp]) {
+    for (const asset of family?.assets || []) {
+      const value = nullableNumber(asset.utilization_peak_pct);
+      if (value != null) values.push(value);
+    }
+  }
+  const cag = nullableNumber(capacity.cag?.utilization_peak_pct);
+  if (cag != null) values.push(cag);
+  if (capacity.gmg?.publish_capacity_kpi === true) {
+    for (const asset of capacity.gmg.assets || []) {
+      const value = nullableNumber(asset.utilization_peak_pct);
+      if (value != null) values.push(value);
+    }
+  }
+  return values.length ? Math.max(...values) : null;
+}
+
 function pueTone(status: string): UiStatus {
   if (status === 'TARGET_MET') return 'ok';
   if (status === 'ABOVE_TARGET_WITHIN_LIMIT') return 'warn';
@@ -314,7 +336,8 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
   const manualMaintenance = response.manual?.maintenance?.data || null;
   const manualCompetence = response.header.competence;
   const maintenanceManagement = response.maintenance_management || null;
-  const maintenanceManagementAvailable = maintenanceManagement?.status === 'AVAILABLE' && Boolean(maintenanceManagement.corrections);
+  const maintenanceCorrections = maintenanceManagement?.corrections_latest_cycle || maintenanceManagement?.corrections || null;
+  const maintenanceManagementAvailable = maintenanceManagement?.status === 'AVAILABLE' && Boolean(maintenanceCorrections);
 
   const gaps = sourceGaps(response);
   const gapLabels = gaps
@@ -357,8 +380,8 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
   const vacAssetsWithoutData = numeric((vac?.availability as Record<string, unknown> | undefined)?.assets_no_data);
   if (vacAssetsWithoutData > 0) attention.push(`${vacAssetsWithoutData} ativos VAC sem leitura completa de RFF e ALM`);
   if (maintenanceManagementAvailable) {
-    const pendingCorrections = numeric(maintenanceManagement?.corrections?.pending);
-    const partsRequired = numeric(maintenanceManagement?.corrections?.depends_on_part);
+    const pendingCorrections = numeric(maintenanceCorrections?.pending);
+    const partsRequired = numeric(maintenanceCorrections?.depends_on_part);
     const offlineIntegrations = numeric(maintenanceManagement?.integrations?.offline);
     const manualEquipment = numeric(maintenanceManagement?.manual_equipment?.total);
     const panelIssues = numeric(maintenanceManagement?.panels?.issues);
@@ -393,7 +416,7 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
     ? ''
     : ` O PUE ${response.period.type === 'd1' ? 'do último dia válido' : 'médio diário do período'} é ${pueValue.toFixed(2).replace('.', ',')}${pueCapacity?.limit != null ? `, frente ao limite de ${Number(pueCapacity.limit).toFixed(2).replace('.', ',')}` : ''}.`;
   const maintenanceSummaryText = maintenanceManagementAvailable
-    ? ` A gestão de manutenção registra ${numeric(maintenanceManagement?.corrections?.pending)} corretivas pendentes, ${numeric(maintenanceManagement?.corrections?.solved)} solucionadas, ${numeric(maintenanceManagement?.manual_equipment?.total)} equipamentos mantidos em manual, ${numeric(maintenanceManagement?.integrations?.offline)} integrações offline e ${numeric(maintenanceManagement?.panels?.total)} quadros avaliados.${maintenanceAvailabilityPct == null ? '' : ` A disponibilidade consolidada do último ciclo é ${formatPct(maintenanceAvailabilityPct)}.`}`
+    ? ` A gestão de manutenção registra ${numeric(maintenanceCorrections?.pending)} corretivas pendentes, ${numeric(maintenanceCorrections?.solved)} solucionadas, ${numeric(maintenanceManagement?.manual_equipment?.total)} equipamentos mantidos em manual, ${numeric(maintenanceManagement?.integrations?.offline)} integrações offline e ${numeric(maintenanceManagement?.panels?.total)} quadros avaliados.${maintenanceAvailabilityPct == null ? '' : ` A disponibilidade consolidada do último ciclo é ${formatPct(maintenanceAvailabilityPct)}.`}`
     : '';
   const coverageSummary = upsCapacity && rppCapacity
     ? ` A cobertura do inventário de capacidade está em ${upsCapacity.receivedCount}/${upsCapacity.expectedCount} UPS e ${rppCapacity.receivedCount}/${rppCapacity.expectedCount} RPP.`
@@ -409,11 +432,10 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
   const maintenanceKpi: OverviewKpi = maintenanceManagementAvailable
     ? {
         label: 'Manutenção',
-        value: `${numeric(maintenanceManagement?.corrections?.pending)} pendentes`,
-        badge: `${numeric(maintenanceManagement?.corrections?.solved)} solucionadas`,
-        ...(maintenanceManagement?.cycle?.latest_cycle == null ? {} : { subtitle: `${maintenanceManagement.cycle.latest_cycle}º ciclo` }),
-        status: numeric(maintenanceManagement?.corrections?.pending) > 0 ? 'warn' : 'ok',
-        icon: 'clipboard',
+        value: `${numeric(maintenanceCorrections?.pending)} pendentes`,
+        badge: `${numeric(maintenanceCorrections?.solved)} ${numeric(maintenanceCorrections?.solved) === 1 ? 'solucionada' : 'solucionadas'}${maintenanceManagement?.cycle?.latest_cycle == null ? '' : ` • ${maintenanceManagement.cycle.latest_cycle}º ciclo`}`,
+        status: numeric(maintenanceCorrections?.pending) > 0 ? 'warn' : 'ok',
+        icon: 'maintenance',
       }
     : manualMaintenance
       ? {
@@ -421,42 +443,17 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
           value: `${manualMaintenance.completed} / ${manualMaintenance.planned}`,
           badge: `${formatPct(manualMaintenance.completion_pct)} realizadas`,
           status: manualMaintenance.completion_pct >= 100 ? 'ok' : 'warn',
-          icon: 'clipboard',
+          icon: 'maintenance',
         }
       : {
           label: 'Manutenção',
           value: 'Aguardando base',
           badge: 'Importação pendente',
           status: 'pending',
-          icon: 'clipboard',
+          icon: 'maintenance',
         };
 
   const rackInventory = response.configuration?.inventory?.racks || null;
-  const rackTotal = nullableNumber(rackInventory?.total_existing) ?? 0;
-  const racksKpi: OverviewKpi = manualRacks
-    ? {
-        label: 'Racks',
-        value: `${manualRacks.available_positions} livres`,
-        badge: `${formatPct(manualRacks.occupancy_pct)} ocupados`,
-        subtitle: `${manualRacks.total_positions} posições`,
-        status: 'info',
-        icon: 'list',
-      }
-    : rackTotal > 0
-      ? {
-          label: 'Racks',
-          value: `${rackTotal.toFixed(0)} posições`,
-          badge: 'Ocupação pendente',
-          status: 'pending',
-          icon: 'list',
-        }
-      : {
-          label: 'Racks',
-          value: 'Não configurado',
-          badge: 'Sem parâmetro',
-          status: 'pending',
-          icon: 'list',
-        };
 
   const trendMonthly = response.daily.map((day) => ({
     month: formatDateBr(day.reference_date).slice(0, 5),
@@ -503,6 +500,127 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
   const vacExpectedAssets = nullableNumber((vac?.availability as Record<string, unknown> | undefined)?.assets_expected) ?? vacAssetItems.length;
   const vacAvailable = vacAssetItems.some((item) => item.hasData);
   const panelsAvailable = maintenanceManagementAvailable && numeric(maintenanceManagement?.panels?.total) > 0;
+
+
+
+  const maintenancePending = numeric(maintenanceCorrections?.pending);
+  const maintenanceSolved = numeric(maintenanceCorrections?.solved);
+  const maintenanceParts = numeric(maintenanceCorrections?.depends_on_part);
+  const integrationsTotal = numeric(maintenanceManagement?.integrations?.total);
+  const integrationsOnline = numeric(maintenanceManagement?.integrations?.online);
+  const integrationsOffline = numeric(maintenanceManagement?.integrations?.offline);
+  const panelTotal = numeric(maintenanceManagement?.panels?.total);
+  const panelIssues = numeric(maintenanceManagement?.panels?.issues);
+  const vacMonitoredAssets = vacAssetItems.filter((item) => item.hasData).length;
+
+  const executiveHighlights = [
+    {
+      label: 'Operação',
+      text: pueValue == null
+        ? `PUE não disponível. Cobertura das fontes em ${formatPct(sourceCompletenessPct)} e completude de medições em ${formatPct(measurementCompletenessPct)} no período.`
+        : `PUE ${response.period.type === 'd1' ? 'do último dia válido' : 'médio'} de ${pueValue.toFixed(2).replace('.', ',')}${pueCapacity?.limit == null ? '' : ` frente ao limite de ${Number(pueCapacity.limit).toFixed(2).replace('.', ',')}`}.`,
+      status: pueValue == null ? 'pending' : pueTone(pueTargetStatus),
+    },
+    {
+      label: 'Capacidade',
+      text: cagCapacity?.utilization_peak_pct == null
+        ? 'CAG sem utilização calculável para o período selecionado.'
+        : `CAG no pico de ${formatPct(cagCapacity.utilization_peak_pct)} frente ao limite de ${cagCapacity.limit_tr == null ? 'capacidade não configurada' : `${Number(cagCapacity.limit_tr).toFixed(0)} TR`}${cagCapacity.reserve_at_peak == null ? '' : `, com reserva de ${Number(cagCapacity.reserve_at_peak).toFixed(1).replace('.', ',')} TR no pico`}.`,
+      status: cagCapacity?.utilization_peak_pct == null ? 'pending' : cagCapacity.utilization_peak_pct >= 90 ? 'crit' : cagCapacity.utilization_peak_pct >= 80 ? 'warn' : 'ok',
+    },
+    {
+      label: 'Manutenção',
+      text: maintenanceManagementAvailable
+        ? `${maintenancePending} corretivas pendentes, ${maintenanceParts} dependem de peça e ${maintenanceSolved} ${maintenanceSolved === 1 ? 'solucionada' : 'solucionadas'} no último ciclo.`
+        : 'Base de gestão de manutenção ainda não disponível.',
+      status: maintenanceManagementAvailable ? (maintenancePending > 0 ? 'warn' : 'ok') : 'pending',
+    },
+    {
+      label: 'Infraestrutura e Integrações',
+      text: maintenanceManagementAvailable
+        ? `${integrationsOffline} integrações offline — ${integrationsOnline} de ${integrationsTotal} online. ${panelIssues} quadros com apontamentos entre ${panelTotal} avaliados.`
+        : 'Integrações e quadros aguardando a base de gestão de manutenção.',
+      status: maintenanceManagementAvailable ? (integrationsOffline > 0 || panelIssues > 0 ? 'warn' : 'ok') : 'pending',
+    },
+    {
+      label: 'Dados',
+      text: `Completude de medições em ${formatPct(measurementCompletenessPct)}, com ${validSources}/${expectedSources} fontes válidas. Referência operacional de ${formatDateBr(response.period.reference_date)}${response.header.stale ? ` (D-${response.header.days_lag ?? 0})` : ' (D-1)'}.`,
+      status: measurementCompletenessPct >= 99 ? 'ok' : measurementCompletenessPct >= 90 ? 'warn' : 'info',
+    },
+  ] satisfies Array<{ label: string; text: string; status: UiStatus }>;
+
+  const priorities: Array<{ title: string; detail?: string; status: UiStatus }> = [];
+  if (pueTargetStatus === 'ABOVE_LIMIT' && pueValue != null && pueCapacity?.limit != null) {
+    priorities.push({
+      title: `PUE ${pueValue.toFixed(2).replace('.', ',')} acima do limite ${Number(pueCapacity.limit).toFixed(2).replace('.', ',')}`,
+      status: 'crit',
+    });
+  }
+  if (maintenanceManagementAvailable && maintenancePending > 0) {
+    priorities.push({ title: `${maintenancePending} corretivas pendentes`, detail: `${maintenanceParts} dependem de peça`, status: 'warn' });
+  }
+  if (maintenanceManagementAvailable && integrationsOffline > 0) {
+    priorities.push({ title: `${integrationsOffline} integrações offline`, detail: `${integrationsOnline} de ${integrationsTotal} online`, status: 'crit' });
+  }
+  if (maintenanceManagementAvailable && panelIssues > 0) {
+    priorities.push({ title: `${panelIssues} quadros com apontamentos`, detail: `${panelTotal} quadros avaliados`, status: 'warn' });
+  }
+  if (upsCapacity && upsCapacity.receivedCount < upsCapacity.expectedCount) {
+    priorities.push({ title: 'Cobertura parcial de UPS', detail: `${upsCapacity.receivedCount} de ${upsCapacity.expectedCount} monitoradas`, status: 'warn' });
+  }
+  if (rppCapacity && rppCapacity.receivedCount < rppCapacity.expectedCount) {
+    priorities.push({ title: 'Cobertura parcial de RPP', detail: `${rppCapacity.receivedCount} de ${rppCapacity.expectedCount} monitoradas`, status: 'warn' });
+  }
+  if (gmgCapacity?.validationStatus === 'VALIDATION_REQUIRED') {
+    priorities.push({ title: 'GMG aguardando validação', detail: 'Telemetria recebida; KPI de carga ainda não publicável', status: 'warn' });
+  }
+  if (vacAssetsWithoutData > 0) {
+    priorities.push({ title: `${vacAssetsWithoutData} ativos VAC sem leitura completa`, detail: 'RFF e ALM com cobertura parcial', status: 'warn' });
+  }
+  if (!manualRacks) priorities.push({ title: 'Ocupação de racks pendente', detail: 'Preenchimento manual da competência', status: 'pending' });
+  if (!manualMaintenance) priorities.push({ title: 'Preventivas pendentes', detail: 'Preenchimento manual da competência', status: 'pending' });
+  if (!priorities.length) priorities.push({ title: 'Nenhuma prioridade crítica identificada', status: 'ok' });
+
+  const qualityHighlights: Array<{ title: string; detail?: string; status: UiStatus }> = [];
+  if (upsCapacity) {
+    qualityHighlights.push({
+      title: 'UPS',
+      detail: `${upsCapacity.receivedCount} de ${upsCapacity.expectedCount} monitoradas`,
+      status: upsCapacity.receivedCount >= upsCapacity.expectedCount ? 'ok' : 'info',
+    });
+  }
+  if (rppCapacity) {
+    qualityHighlights.push({
+      title: 'RPP',
+      detail: `${rppCapacity.receivedCount} de ${rppCapacity.expectedCount} monitoradas`,
+      status: rppCapacity.receivedCount >= rppCapacity.expectedCount ? 'ok' : 'info',
+    });
+  }
+  qualityHighlights.push({
+    title: 'VAC',
+    detail: `${vacMonitoredAssets} de ${Number(vacExpectedAssets).toFixed(0)} com sinais válidos`,
+    status: vacMonitoredAssets >= vacExpectedAssets ? 'ok' : 'info',
+  });
+  if (gmgCapacity) {
+    qualityHighlights.push({
+      title: 'GMG',
+      detail: `${gmgCapacity.receivedCount} de ${gmgCapacity.expectedCount} recebidos${gmgCapacity.validationStatus === 'VALIDATION_REQUIRED' ? ' · validação pendente' : ''}`,
+      status: gmgCapacity.validationStatus === 'VALIDATION_REQUIRED' ? 'warn' : 'ok',
+    });
+  }
+  for (const gap of gaps.filter((item) => !['UPS', 'RPP', 'GMG', 'VAC_CURRENT_CSV_SCOPE'].includes(item.key))) {
+    const detail = [gap.received, gap.expected].filter(Boolean).join(' / ') || gap.note || 'Sem fonte automática válida';
+    qualityHighlights.push({ title: gap.label, detail, status: gap.status === 'SOURCE_NOT_AVAILABLE' ? 'pending' : 'info' });
+  }
+  if (!manualRacks) qualityHighlights.push({ title: 'Ocupação de racks', detail: 'Preenchimento manual pendente', status: 'pending' });
+  if (!manualMaintenance) qualityHighlights.push({ title: 'Preventivas', detail: 'Preenchimento manual pendente', status: 'pending' });
+
+  const peakUtilizationTrend = response.daily.map((day) => ({
+    date: formatDateBr(day.reference_date).slice(0, 5),
+    utilization: maxPeakFromCapacity(day.capacity),
+    limit: 100,
+  }));
+
 
   const upsTelemetryKey: Record<string, string> = {
     'UPS 801': 'ups_801_kva',
@@ -655,13 +773,6 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
           icon: 'pue',
         },
         {
-          label: 'Fontes válidas',
-          value: formatPct(validSourceCompletenessPct),
-          badge: `${validSources}/${expectedSources} fontes com dados`,
-          status: validSourceCompletenessPct >= 99 ? 'ok' : 'warn',
-          icon: 'shield',
-        },
-        {
           label: 'CAG / pico',
           value: cagCapacity?.utilization_peak_pct == null ? 'Não disponível' : formatPct(cagCapacity.utilization_peak_pct),
           badge: cagCapacity?.limit_tr == null ? 'Sem limite configurado' : `Limite ${Number(cagCapacity.limit_tr).toFixed(0)} TR`,
@@ -670,26 +781,36 @@ export function adaptDashboardResponse(response: DashboardApiResponse): Dashboar
         },
         maintenanceKpi,
         {
-          label: 'Quadros',
-          value: panelsAvailable ? `${numeric(maintenanceManagement?.panels?.total)} avaliados` : 'Não disponível',
-          badge: panelsAvailable ? `${numeric(maintenanceManagement?.panels?.issues)} com apontamentos` : 'Aguardando base',
-          status: panelsAvailable ? (numeric(maintenanceManagement?.panels?.issues) > 0 ? 'warn' : 'ok') : 'pending',
-          icon: 'grid',
+          label: 'Integrações',
+          value: maintenanceManagementAvailable ? `${integrationsOffline} offline` : 'Não disponível',
+          badge: maintenanceManagementAvailable ? `${integrationsOnline}/${integrationsTotal} online` : 'Aguardando base',
+          status: maintenanceManagementAvailable ? (integrationsOffline > 0 ? 'crit' : 'ok') : 'pending',
+          icon: 'integrations',
         },
         {
-          label: 'Completude',
-          value: formatPct(measurementCompletenessPct),
-          badge: response.period.label,
-          status: measurementCompletenessPct >= 99 ? 'ok' : measurementCompletenessPct >= 90 ? 'warn' : 'crit',
-          icon: 'alert',
+          label: 'Quadros',
+          value: panelsAvailable ? `${panelIssues} com apontamentos` : 'Não disponível',
+          badge: panelsAvailable ? `${panelTotal} avaliados` : 'Aguardando base',
+          status: panelsAvailable ? (panelIssues > 0 ? 'warn' : 'ok') : 'pending',
+          icon: 'clipboard',
         },
-        racksKpi,
+        {
+          label: 'Qualidade dos dados',
+          value: formatPct(measurementCompletenessPct),
+          badge: `${validSources}/${expectedSources} fontes recebidas`,
+          status: 'info',
+          icon: 'quality',
+        },
       ],
       executiveSummary,
+      executiveHighlights,
       criticalAssets,
       attention,
+      priorities,
       pendingData: [...new Set(pendingData)],
+      qualityHighlights,
       trendMonthly,
+      peakUtilizationTrend,
       familyCapacity,
       sourceOrigins: [
         { title: 'CSV automático', description: 'WebCTRL via CSV', value: 8, status: 'ok' },

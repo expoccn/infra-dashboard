@@ -9,7 +9,7 @@ export type DataAvailability =
   | 'PENDING_VALIDATION';
 
 export type UiStatus = 'ok' | 'warn' | 'crit' | 'pending' | 'info';
-export type KpiIcon = 'pue' | 'shield' | 'grid' | 'clipboard' | 'alert' | 'list';
+export type KpiIcon = 'pue' | 'shield' | 'grid' | 'clipboard' | 'alert' | 'list' | 'maintenance' | 'integrations' | 'quality';
 
 export interface HeaderMeta {
   site: string;
@@ -31,6 +31,25 @@ export interface OverviewKpi {
   subtitle?: string;
   status: UiStatus;
   icon: KpiIcon;
+}
+
+
+export interface OverviewInsight {
+  label: string;
+  text: string;
+  status: UiStatus;
+}
+
+export interface OverviewListItem {
+  title: string;
+  detail?: string;
+  status: UiStatus;
+}
+
+export interface UtilizationTrendPoint {
+  date: string;
+  utilization: number | null;
+  limit: number;
 }
 
 export interface MonthlyTrendPoint {
@@ -208,10 +227,14 @@ export interface DashboardPayload {
   overview: {
     kpis: OverviewKpi[];
     executiveSummary: string;
+    executiveHighlights: OverviewInsight[];
     criticalAssets: string[];
     attention: string[];
+    priorities: OverviewListItem[];
     pendingData: string[];
+    qualityHighlights: OverviewListItem[];
     trendMonthly: MonthlyTrendPoint[];
+    peakUtilizationTrend: UtilizationTrendPoint[];
     familyCapacity: FamilyCapacityPoint[];
     sourceOrigins: SourceOriginItem[];
     totalSources: number;
