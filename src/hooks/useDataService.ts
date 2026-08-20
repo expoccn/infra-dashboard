@@ -13,6 +13,9 @@ import {
   updateAdminUser,
   resetAdminUserPassword,
   downloadReport,
+  askAi,
+  fetchAiHistory,
+  clearAiHistory,
 } from '@/services/api';
 
 export function useHealth() {
@@ -147,6 +150,37 @@ export function useResetAdminUserPassword() {
 export function useDownloadReport() {
   return useMutation({
     mutationFn: downloadReport,
+  });
+}
+
+export function useAiHistory(sessionId: string) {
+  return useQuery({
+    queryKey: ['ai-history', sessionId],
+    queryFn: () => fetchAiHistory(sessionId),
+    enabled: /^[A-Za-z0-9._-]{8,96}$/.test(sessionId),
+    staleTime: 0,
+    retry: 1,
+  });
+}
+
+export function useAskAi() {
+  return useMutation({
+    mutationFn: askAi,
+  });
+}
+
+export function useClearAiHistory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: clearAiHistory,
+    onSuccess: async (result) => {
+      queryClient.setQueryData(['ai-history', result.session_id], {
+        ok: true,
+        action: 'history',
+        session_id: result.session_id,
+        history: [],
+      });
+    },
   });
 }
 

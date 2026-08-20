@@ -1,4 +1,8 @@
 import type {
+  AiChatRequest,
+  AiChatResponse,
+  AiClearResponse,
+  AiHistoryResponse,
   ApiErrorBody,
   HealthResponse,
   HistoryResponse,
@@ -371,3 +375,24 @@ export function resetAdminUserPassword(userId: string) {
     body: JSON.stringify({ user_id: userId }),
   });
 }
+
+export function askAi(payload: AiChatRequest) {
+  return apiRequest<AiChatResponse>('/ai-chat', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  }, 120000);
+}
+
+export function fetchAiHistory(sessionId: string) {
+  return apiRequest<AiHistoryResponse>(`/ai-history?session_id=${encodeURIComponent(sessionId)}`, { cache: 'no-store' });
+}
+
+export function clearAiHistory(sessionId: string) {
+  return apiRequest<AiClearResponse>('/ai-clear', {
+    method: 'POST',
+    body: JSON.stringify({ session_id: sessionId }),
+    cache: 'no-store',
+  });
+}
+

@@ -40,7 +40,7 @@ export function Header({
   data: DashboardPayload;
   title: string;
   description?: string;
-  mode?: 'operational' | 'maintenance' | 'overview';
+  mode?: 'operational' | 'maintenance' | 'overview' | 'ai';
 }) {
   if (mode === 'maintenance') {
     return (
@@ -64,6 +64,43 @@ export function Header({
             </div>
           </div>
           <div className="lg:hidden"><ThemeToggle /></div>
+        </div>
+      </header>
+    );
+  }
+
+  if (mode === 'ai') {
+    const refLabel = data.header.stale
+      ? `${data.header.referenceDate} (D-${data.header.daysLag})`
+      : `${data.header.referenceDate} (D-1)`;
+
+    return (
+      <header className="border-b border-border pb-4">
+        <div className="flex flex-wrap items-start gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-semibold tracking-tight xl:text-[1.85rem]">{title}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Assistente de consulta governada aos dados do <span className="font-medium text-foreground/80">{data.header.site}</span>
+            </p>
+            {description ? <p className="mt-2 max-w-4xl text-xs leading-relaxed text-muted-foreground">{description}</p> : null}
+          </div>
+
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5 shadow-sm">
+            <CalendarDays className="h-4.5 w-4.5 text-muted-foreground" />
+            <div className="text-xs">
+              <p className="text-muted-foreground">Referência dos dados</p>
+              <p className={cn('mt-0.5 font-semibold', data.header.stale ? 'text-warning' : 'text-success')}>{refLabel}</p>
+            </div>
+          </div>
+          <div className="lg:hidden"><ThemeToggle /></div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+          <PeriodButtons compact />
+          <span className="text-[0.72rem] text-muted-foreground">Datas citadas diretamente na pergunta têm prioridade sobre o período padrão.</span>
+          {data.period.partialHistory ? (
+            <span className="rounded-md bg-warning/8 px-2.5 py-1 text-[0.72rem] font-semibold text-warning">Histórico parcial</span>
+          ) : null}
         </div>
       </header>
     );

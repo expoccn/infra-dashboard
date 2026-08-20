@@ -13,7 +13,7 @@ export function AppShell({
   title: string;
   description?: string;
   data: DashboardPayload;
-  headerMode?: 'operational' | 'maintenance' | 'overview';
+  headerMode?: 'operational' | 'maintenance' | 'overview' | 'ai';
   children: ReactNode;
 }) {
   return (

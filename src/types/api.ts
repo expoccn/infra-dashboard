@@ -408,6 +408,88 @@ export interface ReportResponse {
   };
 }
 
+
+
+export interface AiEvidenceItem {
+  id?: string;
+  label: string;
+  value: unknown;
+  source?: string;
+}
+
+export interface AiReference {
+  period?: PeriodType | string;
+  label?: string | null;
+  reference_date?: string | null;
+  stale?: boolean;
+  days_lag?: number | null;
+}
+
+export interface AiGovernance {
+  no_calculation?: boolean;
+  no_external_knowledge?: boolean;
+  no_chat_memory_to_llm?: boolean;
+  no_new_aggregation?: boolean;
+  temporal_resolution?: string;
+  allowed_temporal_operations?: string[];
+  llm_valid?: boolean;
+  model_role?: string;
+  reason?: string;
+  [key: string]: unknown;
+}
+
+export interface AiHistoryEntry {
+  id: string;
+  timestamp: string;
+  period: PeriodType | string;
+  reference_date?: string | null;
+  question: string;
+  answer: string;
+  intent?: string | null;
+  temporal_query?: unknown;
+  used_llm: boolean;
+  evidence: AiEvidenceItem[];
+  limitations: string[];
+  governance?: AiGovernance;
+}
+
+export interface AiChatResponse {
+  ok: boolean;
+  action: 'chat';
+  session_id: string;
+  period: PeriodType | string;
+  reference?: AiReference | null;
+  intent?: string | null;
+  temporal_query?: unknown;
+  answer: string;
+  evidence: AiEvidenceItem[];
+  limitations: string[];
+  used_llm: boolean;
+  governance?: AiGovernance;
+  generated_at: string;
+}
+
+export interface AiHistoryResponse {
+  ok: boolean;
+  action: 'history';
+  session_id: string;
+  history: AiHistoryEntry[];
+}
+
+export interface AiClearResponse {
+  ok: boolean;
+  action: 'clear';
+  session_id: string;
+  history: [];
+  cleared_at: string;
+}
+
+export interface AiChatRequest {
+  question: string;
+  period: PeriodType;
+  session_id: string;
+}
+
 export interface ApiErrorBody {
   ok?: false;
   error?: string;
