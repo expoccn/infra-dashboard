@@ -33,9 +33,11 @@ export type ReportDownloadRequest = {
 const REPORT_PATHS: Record<ReportType, Partial<Record<ReportFormat, string>>> = {
   daily: {
     pdf: '/report-daily-pdf',
+    pptx: '/report-daily-pptx',
   },
   weekly: {
     pdf: '/report-weekly-pdf',
+    pptx: '/report-weekly-pptx',
   },
   monthly: {
     pdf: '/report-monthly-pdf',

@@ -29,6 +29,7 @@ const REPORT_OPTIONS: ReportOption[] = [
     description: 'Consolida a operação do último dia válido, com parâmetros oficiais, qualidade dos dados e situação das fontes.',
     contents: 'Energia e PUE, capacidade, CAG/VAC, disponibilidade, manutenção, racks e pendências de dados.',
     icon: CalendarDays,
+    powerPoint: true,
   },
   {
     type: 'weekly',
@@ -37,6 +38,7 @@ const REPORT_OPTIONS: ReportOption[] = [
     description: 'Consolida a última semana encerrada, de segunda a domingo, preservando a cobertura real de cada família de ativos.',
     contents: 'Evolução do período, indicadores consolidados, capacidade, climatização, manutenção e qualidade das fontes.',
     icon: CalendarRange,
+    powerPoint: true,
   },
   {
     type: 'monthly',
@@ -176,7 +178,7 @@ function RelatoriosPage() {
             <div className="rounded-xl bg-surface px-4 py-3">
               <p className="font-medium text-foreground">PDF e PowerPoint</p>
               <p className="mt-1.5 leading-relaxed text-muted-foreground">
-                Os relatórios diário e semanal estão disponíveis em PDF. O relatório mensal também pode ser gerado em PowerPoint para apresentação.
+                Os relatórios diário, semanal e mensal estão disponíveis em PDF e PowerPoint, sempre gerados sob demanda com os dados mais recentes disponíveis.
               </p>
             </div>
 
