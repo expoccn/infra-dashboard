@@ -108,6 +108,17 @@ export function Sidebar() {
         ) : null}
       </nav>
 
+      <div
+        className="mx-3 mb-2 flex h-16 shrink-0 items-center justify-center overflow-hidden"
+        aria-label="CCN Automação"
+      >
+        <img
+          src="/ccn-logo-white.png"
+          alt="CCN Automação"
+          className="h-auto w-[118px] max-w-full object-contain opacity-90 brightness-0 transition-opacity dark:brightness-100"
+        />
+      </div>
+
       <div className="mx-3 mb-2 mt-auto flex shrink-0 items-center gap-3 rounded-xl border border-sidebar-border bg-card px-3 py-3">
         <UserRound className="h-5 w-5 shrink-0 text-primary" />
         <div className="min-w-0 flex-1">
